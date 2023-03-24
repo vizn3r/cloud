@@ -28,7 +28,7 @@ func Start(PORT string) {
 			if path == "/" {
 				w.WriteHeader(http.StatusBadRequest)
 			}
-			http.ServeFile(w, r, "./files" + path)
+			http.ServeFile(w, r, "/opt/uploader/cloud/files" + path)
 		} else if r.Method == "POST" {
 			if auth := r.Header.Get("authorization"); auth != os.Getenv("AUTHORIZATION") {
 				w.WriteHeader(http.StatusUnauthorized)
@@ -38,7 +38,7 @@ func Start(PORT string) {
 			data, _ := ioutil.ReadAll(r.Body)
 			rand := fmt.Sprintf("%x", rand.Int63())
 			ext := mimeTypes[r.Header.Get("content-type")]
-			ioutil.WriteFile("./files/" + rand + ext, data, 0644)
+			ioutil.WriteFile("/opt/uploader/cloud/files" + rand + ext, data, 0644)
 			w.Write([]byte("https://" + r.Host + "/" + rand + ext))
 		}
 	})	
