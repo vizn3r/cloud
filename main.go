@@ -14,9 +14,8 @@ const (
 )
 
 func main() {
-	p, _ := os.Getwd()
-	fmt.Println(p)
-	godotenv.Load( p + "/.env")
+	godotenv.Load(".env")
+	fmt.Println(os.Getenv("AUTHORIZATION"))
 	uploader.Start(PORT)
 	fmt.Println("Started at port" + PORT)
 	http.ListenAndServe(PORT, nil)
