@@ -4,6 +4,7 @@ import (
 	"cloud/uploader"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/joho/godotenv"
 )
@@ -13,7 +14,9 @@ const (
 )
 
 func main() {
-	godotenv.Load(".env")
+	p, _ := os.Getwd()
+	fmt.Println(p)
+	godotenv.Load( p + "/.env")
 	uploader.Start(PORT)
 	fmt.Println("Started at port" + PORT)
 	http.ListenAndServe(PORT, nil)
