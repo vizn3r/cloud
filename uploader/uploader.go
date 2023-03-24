@@ -16,7 +16,7 @@ var mimeTypes = map[string]string{
 	"video/mp4": ".mp4",
 }
 
-func Start() {
+func Start(PORT string) {
 	rand.Seed(time.Now().UnixMicro())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
@@ -39,7 +39,7 @@ func Start() {
 			rand := fmt.Sprintf("%x", rand.Int63())
 			ext := mimeTypes[r.Header.Get("content-type")]
 			ioutil.WriteFile("./files/" + rand + ext, data, 0644)
-			w.Write([]byte("http://localhost:9873/" + rand + ext))
+			w.Write([]byte("http://localhost:" + PORT + "/" + rand + ext))
 		}
 	})	
 }
