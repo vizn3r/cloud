@@ -38,7 +38,7 @@ func Start(PORT string) {
 			data, _ := ioutil.ReadAll(r.Body)
 			rand := fmt.Sprintf("%x", rand.Int63())
 			ext := mimeTypes[r.Header.Get("content-type")]
-			ioutil.WriteFile("/opt/uploader/cloud/files" + rand + ext, data, 0644)
+			ioutil.WriteFile("/opt/uploader/cloud/files/" + rand + ext, data, 0644)
 			w.Write([]byte("https://" + r.Host + "/" + rand + ext))
 		}
 	})	
