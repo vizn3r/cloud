@@ -21,12 +21,14 @@ func Start(PORT string) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 		if r.Method == "GET" {
+			fmt.Println(path)
 			if strings.Contains(path, "..") {
 				w.WriteHeader(http.StatusForbidden)
 				return
 			}
 			if path == "/" {
 				w.WriteHeader(http.StatusBadRequest)
+				return
 			}
 			http.ServeFile(w, r, "/opt/uploader/cloud/files" + path)
 		} else if r.Method == "POST" {
