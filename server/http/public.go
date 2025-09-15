@@ -2,6 +2,7 @@ package http
 
 import (
 	"cloud-server/conf"
+	"fmt"
 	"log"
 
 	"github.com/gofiber/fiber/v3"
@@ -14,7 +15,7 @@ func publicRouter(api fiber.Router) {
 
 	pub.Get("/*", redirect.New(redirect.Config{
 		Rules: map[string]string{
-			"/*": conf.GlobalConf.WebClientHost,
+			"/*": conf.GlobalConf.WebClient.Host + fmt.Sprintf(":%d", conf.GlobalConf.WebClient.Port),
 		},
 	}))
 }
