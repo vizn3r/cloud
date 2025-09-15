@@ -35,7 +35,7 @@ func fsRouter(api fiber.Router) {
 		file, err := fs.FindFile(fid)
 		if os.IsNotExist(err) {
 			log.Println(err)
-			return c.SendStatus(fiber.StatusInternalServerError)
+			return c.SendStatus(fiber.StatusNotFound)
 		} else if err != nil {
 			log.Println(err)
 			return c.SendStatus(fiber.StatusInternalServerError)
@@ -78,7 +78,7 @@ func fsRouter(api fiber.Router) {
 
 		newFile := fs.File{
 			Meta: fs.FileMeta{
-				UploadName:  c.Get("X-Original-filename", ogName),
+				UploadName:  c.Get("X-Original-Filename", ogName),
 				Size:        uint64(len(data)),
 				UploadedAt:  time.Now(),
 				ContentType: mimeType.String(),

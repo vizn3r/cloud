@@ -25,6 +25,10 @@ type File struct {
 const META_SEPARATOR = "\n---FILEDATA---\n"
 
 func FindFile(path string) (File, error) {
+	if err := os.MkdirAll("storage/temp", 0755); err != nil {
+		return File{}, err
+	}
+
 	data, err := os.ReadFile("storage/" + path)
 	if err != nil {
 		return File{}, err
@@ -61,10 +65,6 @@ func (file File) SaveFile() (string, error) {
 	comb.Write(metaJSON)
 	comb.WriteString(META_SEPARATOR)
 	comb.Write(file.Data)
-
-	if err := os.MkdirAll("storage/temp", 0755); err != nil {
-		return "", err
-	}
 
 	temp := "storage/temp/" + id
 	final := "storage/" + id
