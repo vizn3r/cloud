@@ -1,11 +1,14 @@
 package http
 
 import (
+	"cloud-server/conf"
 	"context"
+	"fmt"
 	"log"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/cors"
 )
 
 type HTTP struct {
@@ -19,7 +22,16 @@ func NewHTTP(host string) *HTTP {
 
 func (http *HTTP) Start() {
 	go func() {
-		publicRouter(http.App)
+		http.App.Use(cors.New(cors.Config{
+			AllowOrigins: []string{conf.GlobalConf.WebClient.Host + fmt.Sprintf(":%d", conf.GlobalConf.WebClient.Port)},
+		}))
+		//http.App.Use(func(c fiber.Ctx) error {
+		//	log.Println("New req: ", c.Request().String())
+		//	return c.Next()
+		//})
+		v1 := http.App.Group("/")
+		fsRouter(v1)
+		publicRouter(v1)
 		if err := http.App.Listen(http.Host); err != nil {
 			log.Fatal(err)
 		}

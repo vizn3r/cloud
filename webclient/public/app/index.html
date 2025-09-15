@@ -11,6 +11,56 @@
   </head>
   <body>
     <p>sexy mommy thighs 2</p>
+    <form id="uploadForm" enctype="multipart/form-data">
+      <input type='file' name='file' id="fileInput" required>
+      <br><br>
+      <button type="button" onclick="uploadFile()">Upload</button>
+    </form>
+    
+    <div id="response"></div>
+    <div class="form-container">
+      <form>
+        <label for="file_id">Enter File ID:</label>
+        <input type="text" id="file_id" name="file_id" required>
+        <button type="button" onclick="updateUrl()">Get File</button>
+      </form>
+    </div>
+    <img src="" id="f_response">
     <img src="https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fi.pinimg.com%2Foriginals%2Fa8%2F1f%2Ff0%2Fa81ff008b4237d38bceb9d475e6cbb0e.jpg" alt="ur loss again :(">
+    <script>
+      function uploadFile() {
+        const fileInput = document.getElementById('fileInput');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+          alert('Please select a file first');
+          return;
+        }
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        // Make the request to your external endpoint
+        fetch('http://localhost:8080/file', {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => response.text())
+        .then(data => {
+          document.getElementById('response').innerHTML = data;
+        })
+        .catch(error => {
+          document.getElementById('response').innerHTML = 'Error: ' + error.message;
+        });
+      }
+    </script>
+    <script>
+        function updateUrl() {
+            const fileId = document.getElementById('file_id').value;
+            const form = document.querySelector('form');
+            form.setAttribute('hx-get', `http://localhost:8080/file/${fileId}`);
+            document.getElementById('f_response').src = `http://localhost:8080/file/${fileId}`
+        }
+    </script>
   </body>
 </html>
