@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cloud-server/conf"
 	"cloud-server/http"
 	"os"
 	"os/signal"
@@ -8,6 +9,8 @@ import (
 )
 
 func main() {
+	conf.LoadConfig("./server.json")
+
 	httpHost := http.NewHTTP(":8080")
 	httpHost.Start()
 	defer httpHost.Stop()

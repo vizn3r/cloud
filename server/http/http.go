@@ -18,7 +18,6 @@ func NewHTTP(host string) *HTTP {
 }
 
 func (http *HTTP) Start() {
-	log.Println("Starting HTTP handler")
 	go func() {
 		publicRouter(http.App)
 		if err := http.App.Listen(http.Host); err != nil {
