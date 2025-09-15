@@ -1,5 +1,6 @@
 #!/bin/bash
 
+read -p "Server port: " SERVER_PORT
 read -p "Web client host: " WEB_CLIENT_HOST
 read -p "Web client host port: " WEB_CLIENT_PORT
 echo
@@ -9,7 +10,8 @@ cat <<EOF >server.json
   "webClient": {
     "host": "$WEB_CLIENT_HOST",
     "port": $WEB_CLIENT_PORT
-  }
+  },
+  "port": $SERVER_PORT
 }
 EOF
 

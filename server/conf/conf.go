@@ -11,6 +11,7 @@ type Conf struct {
 		Host string `json:"host"`
 		Port int    `json:"port"`
 	} `json:"webClient"`
+	Port int `json:"port"`
 }
 
 var GlobalConf Conf

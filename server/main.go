@@ -3,6 +3,8 @@ package main
 import (
 	"cloud-server/conf"
 	"cloud-server/http"
+	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,7 +13,14 @@ import (
 func main() {
 	conf.LoadConfig("./server.json")
 
-	httpHost := http.NewHTTP(":8080")
+	if _, err := os.Stat("storage"); os.IsNotExist(err) {
+		err := os.Mkdir("storage", 0766)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	httpHost := http.NewHTTP(fmt.Sprintf(":%d", conf.GlobalConf.Port))
 	httpHost.Start()
 	defer httpHost.Stop()
 
