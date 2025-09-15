@@ -2,6 +2,7 @@ package main
 
 import (
 	"cloud-server/conf"
+	"cloud-server/db"
 	"cloud-server/http"
 	"fmt"
 	"log"
@@ -19,6 +20,10 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+
+	dbHost := db.NewDB()
+	dbHost.Start()
+	defer dbHost.Stop()
 
 	httpHost := http.NewHTTP(fmt.Sprintf(":%d", conf.GlobalConf.Port))
 	httpHost.Start()

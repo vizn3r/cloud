@@ -21,6 +21,7 @@ func NewHTTP(host string) *HTTP {
 }
 
 func (http *HTTP) Start() {
+	log.Println("Starting HTTP handler")
 	go func() {
 		http.App.Use(cors.New(cors.Config{
 			AllowOrigins: []string{conf.GlobalConf.WebClient.Host + fmt.Sprintf(":%d", conf.GlobalConf.WebClient.Port)},
@@ -39,7 +40,6 @@ func (http *HTTP) Start() {
 }
 
 func (http *HTTP) Stop() {
-	log.Println("Stopping HTTP handler")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
