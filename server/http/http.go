@@ -25,10 +25,10 @@ func (http *HTTP) Start() {
 		http.App.Use(cors.New(cors.Config{
 			AllowOrigins: []string{conf.GlobalConf.WebClient.Host + fmt.Sprintf(":%d", conf.GlobalConf.WebClient.Port)},
 		}))
-		//http.App.Use(func(c fiber.Ctx) error {
-		//	log.Println("New req: ", c.Request().String())
-		//	return c.Next()
-		//})
+		http.App.Use(func(c fiber.Ctx) error {
+			log.Println("New req: ", c.Request().String())
+			return c.Next()
+		})
 		v1 := http.App.Group("/")
 		fsRouter(v1)
 		publicRouter(v1)

@@ -13,7 +13,7 @@ func publicRouter(api fiber.Router) {
 	log.Println("Starting HTTP handler")
 	pub := api.Group("/")
 
-	pub.Get("/*", redirect.New(redirect.Config{
+	pub.All("/*", redirect.New(redirect.Config{
 		Rules: map[string]string{
 			"/*": conf.GlobalConf.WebClient.Host + fmt.Sprintf(":%d", conf.GlobalConf.WebClient.Port),
 		},
