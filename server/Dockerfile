@@ -28,6 +28,10 @@ RUN apk add --no-cache ca-certificates sqlite
 RUN addgroup -g 1000 -S app && \
     adduser -u 1000 -S app -G app
 
+# Create storage directories and set ownership BEFORE switching user
+RUN mkdir -p /var/lib/cloud-storage && \
+    chown -R app:app /var/lib/cloud-storage
+
 # Set working directory
 WORKDIR /app
 
@@ -37,8 +41,8 @@ COPY --from=builder --chown=app:app /app/cloud-server .
 # Copy SQLite database schema
 COPY --chown=app:app server/db/sql/tables.sql ./db/sql/
 
-# Create data directory for SQLite
-RUN mkdir -p /data && chown app:app /data
+# Create data directory for SQLite and set ownership
+RUN mkdir -p /data && chown -R app:app /data
 
 # Expose port
 EXPOSE 8080

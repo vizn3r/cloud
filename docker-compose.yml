@@ -22,6 +22,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    # Ensure the container runs with the correct user ID
+    user: "1000:1000"
 
   webclient:
     build:
@@ -47,6 +49,11 @@ services:
 volumes:
   cloud_storage:
     driver: local
+    # Ensure the volume has the correct permissions
+    driver_opts:
+      type: none
+      o: bind,uid=1000,gid=1000
+      device: ./storage
 
 networks:
   cloud-network:
