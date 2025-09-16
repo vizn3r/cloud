@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login - Cloud thingy</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.7/dist/htmx.min.js" integrity="sha384-ZBXiYtYQ6hJ2Y0ZNoYuI+Nq5MqWBr+chMrS/RkXpNzQCApHEhOt2aY8EJgqwHLkJ" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  </head>
+  <body>
+    <div class="login-container">
+      <div class="login-card">
+        <h1>Login</h1>
+
+        <form id="loginForm" class="form-group">
+          <div class="input-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+
+          <div class="input-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Login</button>
+        </form>
+
+        <div id="loginMessage" class="response" style="display: none;"></div>
+
+        <p class="register-link">
+          Don't have an account?
+          <a href="#" onclick="showRegister()">Register here</a>
+        </p>
+      </div>
+    </div>
+
+    <script>
+      document.getElementById('loginForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        fetch('http://localhost:8080/user/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, password })
+        })
+        .then(response => {
+          if (!response.ok) {
+            return response.json().then(err => { throw new Error(err.error || 'Login failed') });
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Store token in localStorage
+          localStorage.setItem('authToken', data.token);
+          localStorage.setItem('userId', data.user_id);
+
+          // Redirect to /app
+          window.location.href = '/app';
+        })
+        .catch(error => {
+          const messageEl = document.getElementById('loginMessage');
+          messageEl.textContent = error.message;
+          messageEl.className = 'response error';
+          messageEl.style.display = 'block';
+        });
+      });
+
+      function showRegister() {
+        alert('Registration functionality coming soon!');
+      }
+
+      // Check if user is already logged in
+      if (localStorage.getItem('authToken')) {
+        // Verify token is still valid
+        fetch('http://localhost:8080/user/me', {
+          headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('authToken')
+          }
+        })
+        .then(response => {
+          if (response.ok) {
+            window.location.href = '/app';
+          } else {
+            // Token invalid, clear it
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userId');
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('userId');
+        });
+      }
+    </script>
+  </body>
+</html>

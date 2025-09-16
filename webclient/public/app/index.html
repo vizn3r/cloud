@@ -14,6 +14,10 @@
       <div class="header">
         <h1>File Share</h1>
         <div class="subtitle">Upload and share files easily</div>
+        <div class="user-info">
+          <span id="userEmail"></span>
+          <button onclick="logout()" class="btn btn-logout">Logout</button>
+        </div>
       </div>
 
       <div class="card">
@@ -53,6 +57,49 @@
     <script>
       let currentFileId = null;
 
+      // Check authentication on page load
+      document.addEventListener('DOMContentLoaded', function() {
+        const token = localStorage.getItem('authToken');
+
+        if (!token) {
+          window.location.href = '/login';
+          return;
+        }
+
+        // Verify token and get user info
+        fetch('http://localhost:8080/user/me', {
+          headers: {
+            'Authorization': 'Bearer ' + token
+          }
+        })
+        .then(response => {
+          if (!response.ok) {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userId');
+            window.location.href = '/login';
+            return;
+          }
+          return response.json();
+        })
+        .then(userInfo => {
+          if (userInfo) {
+            document.getElementById('userEmail').textContent = userInfo.email;
+          }
+        })
+        .catch(error => {
+          console.error('Auth check failed:', error);
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('userId');
+          window.location.href = '/login';
+        });
+      });
+
+      function logout() {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userId');
+        window.location.href = '/login';
+      }
+
       function uploadFile() {
         const fileInput = document.getElementById('fileInput');
         const file = fileInput.files[0];
@@ -65,9 +112,13 @@
         const formData = new FormData();
         formData.append('file', file);
 
-        // Make the request to your external endpoint
+        // Make the request to your external endpoint with auth token
+        const token = localStorage.getItem('authToken');
         fetch('http://localhost:8080/file', {
           method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + token
+          },
           body: formData
         })
         .then(response => response.text())
@@ -95,10 +146,12 @@
           return;
         }
 
-        // Create a share for the file
+        // Create a share for the file with auth token
+        const token = localStorage.getItem('authToken');
         fetch(`http://localhost:8080/share/${currentFileId}`, {
           method: 'POST',
           headers: {
+            'Authorization': 'Bearer ' + token,
             'X-Share-Duration': '10080' // 1 week in minutes
           }
         })
