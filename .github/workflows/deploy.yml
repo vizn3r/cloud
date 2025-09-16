@@ -64,15 +64,6 @@ jobs:
         push: true
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/cloud-webclient:latest
 
-    - name: Copy docker-compose to server
-      uses: appleboy/scp-action@master
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SERVER_SSH_KEY }}
-        source: docker-compose.yml
-        target: /root/vizn3rcloud/
-
     - name: Deploy to server (SSH)
       uses: appleboy/ssh-action@v1.0.3
       with:
@@ -80,10 +71,15 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
-          # Pull latest images
+          # Update repository and build local images
           cd /root/vizn3rcloud
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/cloud-server:latest
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/cloud-webclient:latest
+          git pull origin main
+
+          # Build server image
+          docker build -f server/Dockerfile -t cloud-server:latest .
+
+          # Build webclient image
+          docker build -f webclient/Dockerfile -t cloud-webclient:latest .
 
           # Stop and remove old containers
           docker compose down
