@@ -2,44 +2,31 @@ package fs
 
 import (
 	"cloud-server/db"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-type Share struct {
-	UUID      string
-	FileUUID  string
-	CreatedAt time.Time
-	ExpiresAt time.Time
-	Downloads uint64
-
-	db *db.DB
+func CreateShare(data *db.DB, fileID string) (string, error) {
+	shareID := uuid.New().String()
+	_, err := data.Connection.Exec(db.Q_SHARE_INSERT, shareID, fileID, time.Now().Add(24*time.Hour))
+	return shareID, err
 }
 
-func NewShare(id string, db *db.DB) *Share {
-	return &Share{
-		UUID: id,
-		db:   db,
-	}
-}
+func FindFileByShare(data *db.DB, shareID string) (File, error) {
+	var fileID string
+	var downloads int
+	var expiresAt *time.Time
 
-func (sh *Share) FindShare() (File, error) {
-	err := sh.db.Connection.QueryRow(db.Q_SHARE_FIND_BY_ID, sh.UUID).Scan(sh.FileUUID, sh.Downloads)
+	err := data.Connection.QueryRow(db.Q_SHARE_FIND_BY_ID, shareID).Scan(&fileID, &downloads, &expiresAt)
 	if err != nil {
 		return File{}, err
 	}
 
-	return FindFile(sh.FileUUID)
-}
-
-func (sh *Share) SaveShare() (Share, error) {
-	id := uuid.New().String()
-	sh.UUID = id
-	err := sh.db.Connection.QueryRow(db.Q_SHARE_INSERT, sh.UUID).Scan(sh.UUID, sh.FileUUID)
-	if err != nil {
-		return Share{}, err
+	if expiresAt != nil && time.Now().After(*expiresAt) {
+		data.Connection.Exec(db.Q_SHARE_DELETE, shareID)
+		return File{}, fmt.Errorf("share expired")
 	}
-
-	return *sh, err
+	return FindFile(fileID)
 }

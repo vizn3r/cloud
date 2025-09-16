@@ -25,7 +25,7 @@ func main() {
 	dbHost.Start()
 	defer dbHost.Stop()
 
-	httpHost := http.NewHTTP(fmt.Sprintf(":%d", conf.GlobalConf.Port))
+	httpHost := http.NewHTTP(fmt.Sprintf(":%d", conf.GlobalConf.Port), dbHost)
 	httpHost.Start()
 	defer httpHost.Stop()
 
