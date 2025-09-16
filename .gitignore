@@ -1,5 +1,4 @@
 .env
 build
-*server.json
 *test.sh
 *storage*

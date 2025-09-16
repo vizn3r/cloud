@@ -1,0 +1,7 @@
+{
+  "webClient": {
+    "host": "http://localhost",
+    "port": 8008
+  },
+  "port": 8080
+}
