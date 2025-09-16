@@ -5,9 +5,10 @@ import (
 	"log"
 	"webclient/conf"
 
+	_ "embed"
+
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/static"
-	_ "embed"
 )
 
 //go:embed webclient.json
