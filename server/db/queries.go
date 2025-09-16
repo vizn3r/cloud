@@ -16,6 +16,11 @@ const (
 	Q_USER_FIND_BY_EMAIL      = "SELECT id, email, password_hash, created_at FROM users WHERE email = ?"
 	Q_USER_FIND_BY_ID         = "SELECT id, email, created_at FROM users WHERE id = ?"
 
+	Q_FILE_INSERT             = "INSERT INTO files (id, owner_id) VALUES (?, ?)"
+	Q_FILE_FIND_BY_ID         = "SELECT owner_id, uploaded_at, updated_at FROM files WHERE id = ?"
+	Q_FILE_FIND_BY_OWNER      = "SELECT id, uploaded_at, updated_at FROM files WHERE owner_id = ?"
+	Q_FILE_DELETE             = "DELETE FROM files WHERE id = ?"
+
 	Q_SESSION_CREATE          = "INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, ?)"
 	Q_SESSION_FIND_BY_TOKEN   = "SELECT user_id, expires_at FROM sessions WHERE token = ?"
 	Q_SESSION_DELETE          = "DELETE FROM sessions WHERE token = ?"

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Login - Cloud thingy</title>
+    <title>Register - Cloud thingy</title>
     <link href="/css/style.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.7/dist/htmx.min.js" integrity="sha384-ZBXiYtYQ6hJ2Y0ZNoYuI+Nq5MqWBr+chMrS/RkXpNzQCApHEhOt2aY8EJgqwHLkJ" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
@@ -11,9 +11,9 @@
   <body>
     <div class="login-container">
       <div class="login-card">
-        <h1>Login</h1>
+        <h1>Register</h1>
 
-        <form id="loginForm" class="form-group">
+        <form id="registerForm" class="form-group">
           <div class="input-group">
             <label for="email">Email</label>
             <input type="email" id="email" name="email" required>
@@ -24,26 +24,40 @@
             <input type="password" id="password" name="password" required>
           </div>
 
-          <button type="submit" class="btn btn-primary">Login</button>
+          <div class="input-group">
+            <label for="confirmPassword">Confirm Password</label>
+            <input type="password" id="confirmPassword" name="confirmPassword" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Register</button>
         </form>
 
-        <div id="loginMessage" class="response" style="display: none;"></div>
+        <div id="registerMessage" class="response" style="display: none;"></div>
 
         <p class="register-link">
-          Don't have an account?
-          <a href="/register">Register here</a>
+          Already have an account?
+          <a href="/login">Login here</a>
         </p>
       </div>
     </div>
 
     <script>
-      document.getElementById('loginForm').addEventListener('submit', function(e) {
+      document.getElementById('registerForm').addEventListener('submit', function(e) {
         e.preventDefault();
 
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
 
-        fetch('http://localhost:8080/user/login', {
+        if (password !== confirmPassword) {
+          const messageEl = document.getElementById('registerMessage');
+          messageEl.textContent = 'Passwords do not match';
+          messageEl.className = 'response error';
+          messageEl.style.display = 'block';
+          return;
+        }
+
+        fetch('http://localhost:8080/user/register', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -52,26 +66,31 @@
         })
         .then(response => {
           if (!response.ok) {
-            return response.json().then(err => { throw new Error(err.error || 'Login failed') });
+            return response.json().then(err => { throw new Error(err.error || 'Registration failed') });
           }
           return response.json();
         })
         .then(data => {
-          // Store token in localStorage
-          localStorage.setItem('authToken', data.token);
-          localStorage.setItem('userId', data.user_id);
+          const messageEl = document.getElementById('registerMessage');
+          messageEl.textContent = 'Registration successful! You can now login.';
+          messageEl.className = 'response success';
+          messageEl.style.display = 'block';
 
-          // Redirect to /app
-          window.location.href = '/app';
+          // Clear form
+          document.getElementById('registerForm').reset();
+
+          // Auto-redirect to login after 2 seconds
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 2000);
         })
         .catch(error => {
-          const messageEl = document.getElementById('loginMessage');
+          const messageEl = document.getElementById('registerMessage');
           messageEl.textContent = error.message;
           messageEl.className = 'response error';
           messageEl.style.display = 'block';
         });
       });
-
 
       // Check if user is already logged in
       if (localStorage.getItem('authToken')) {

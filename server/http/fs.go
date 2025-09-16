@@ -1,6 +1,7 @@
 package http
 
 import (
+	"cloud-server/auth"
 	"cloud-server/db"
 	"cloud-server/fs"
 	"encoding/json"
@@ -13,12 +14,13 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-func fsRouter(api fiber.Router, db *db.DB) {
+func fsRouter(api fiber.Router, data *db.DB) {
 	files := api.Group("/file")
 
-	files.Get("/:fid", func(c fiber.Ctx) error {
+	files.Get("/:fid", auth.RequireToken(data), auth.RequireFileOwnership(data), func(c fiber.Ctx) error {
 		fid := c.Params("fid")
 		log.Println("Requesting file: ", fid)
+
 		file, err := fs.FindFile(fid)
 		if os.IsNotExist(err) {
 			log.Println(err)
@@ -31,9 +33,10 @@ func fsRouter(api fiber.Router, db *db.DB) {
 		return c.Send(file.Data)
 	})
 
-	files.Get("/:fid/data", func(c fiber.Ctx) error {
+	files.Get("/:fid/data", auth.RequireToken(data), auth.RequireFileOwnership(data), func(c fiber.Ctx) error {
 		fid := c.Params("fid")
 		log.Println("Requesting file: ", fid)
+
 		file, err := fs.FindFile(fid)
 		if os.IsNotExist(err) {
 			log.Println(err)
@@ -53,11 +56,11 @@ func fsRouter(api fiber.Router, db *db.DB) {
 		return c.Send(data)
 	})
 
-	files.Post("/", func(c fiber.Ctx) error {
+	files.Post("/", auth.RequireToken(data), func(c fiber.Ctx) error {
 		// File upload size limit: 50MB
 		const maxUploadSize = 50 * 1024 * 1024
 
-		var data []byte
+		var fileData []byte
 		ogName := ""
 		file, err := c.FormFile("file")
 		if err == nil {
@@ -79,8 +82,8 @@ func fsRouter(api fiber.Router, db *db.DB) {
 			}
 			defer opened.Close()
 
-			data = make([]byte, file.Size)
-			_, err = opened.Read(data)
+			fileData = make([]byte, file.Size)
+			_, err = opened.Read(fileData)
 			if err != nil {
 				log.Println(err)
 				return c.SendStatus(fiber.StatusInternalServerError)
@@ -90,27 +93,30 @@ func fsRouter(api fiber.Router, db *db.DB) {
 			if len(c.BodyRaw()) > maxUploadSize {
 				return c.Status(fiber.StatusRequestEntityTooLarge).SendString("Request too large")
 			}
-			data = c.BodyRaw()
+			fileData = c.BodyRaw()
 		}
 
-		mimeType := mimetype.Detect(data)
+		mimeType := mimetype.Detect(fileData)
 
 		newFile := fs.File{
 			Meta: fs.FileMeta{
 				UploadName:  c.Get("X-Original-Filename", ogName),
-				Size:        uint64(len(data)),
+				Size:        uint64(len(fileData)),
 				UploadedAt:  time.Now(),
 				ContentType: mimeType.String(),
 			},
-			Data: data,
+			Data: fileData,
 		}
 
-		id, err := newFile.SaveFile()
+		// Get user ID for file ownership
+		userID := c.Locals("userID").(string)
+		id, err := newFile.SaveFile(data.Connection, userID)
 		if err != nil {
 			log.Println(err)
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
-		log.Println("Uploaded file: ", id)
+
+		log.Println("Uploaded file:", id, "by user:", userID)
 		return c.SendString(id)
 	})
 }

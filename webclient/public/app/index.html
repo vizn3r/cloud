@@ -175,9 +175,27 @@
 
       function updateUrl() {
         const fileId = document.getElementById('file_id').value;
-        const form = document.querySelector('form');
-        form.setAttribute('hx-get', `http://localhost:8080/file/${fileId}`);
-        document.getElementById('f_response').src = `http://localhost:8080/file/${fileId}`
+        const token = localStorage.getItem('authToken');
+
+        // Use fetch to get the file with authentication
+        fetch(`http://localhost:8080/file/${fileId}`, {
+          headers: {
+            'Authorization': 'Bearer ' + token
+          }
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Failed to get file');
+          }
+          return response.blob();
+        })
+        .then(blob => {
+          const url = URL.createObjectURL(blob);
+          document.getElementById('f_response').src = url;
+        })
+        .catch(error => {
+          alert('Error fetching file: ' + error.message);
+        });
       }
     </script>
   </body>

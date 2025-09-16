@@ -1,6 +1,7 @@
 package http
 
 import (
+	"cloud-server/auth"
 	"cloud-server/db"
 	"cloud-server/fs"
 	"log"
@@ -24,7 +25,7 @@ func shareRouter(api fiber.Router, db *db.DB) {
 		return c.Send(file.Data)
 	})
 
-	share.Post("/:fid", func(c fiber.Ctx) error {
+	share.Post("/:fid", auth.RequireToken(db), func(c fiber.Ctx) error {
 		durationStr := c.Get("X-Share-Duration", "1440")
 		duration, err := strconv.Atoi(durationStr)
 		if err != nil || duration < 1 || duration > 10080 { // 1 min to 1 week max

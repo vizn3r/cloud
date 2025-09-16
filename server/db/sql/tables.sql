@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS files (
 CREATE TABLE IF NOT EXISTS folders (
   id TEXT PRIMARY KEY,
   owner_id TEXT NOT NULL,
-  file_ids TEXT[],
+  file_ids TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP
 );

@@ -1,8 +1,10 @@
 package http
 
 import (
+	"cloud-server/conf"
 	"cloud-server/db"
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -24,10 +26,10 @@ func (http *HTTP) Start() {
 	log.Println("Starting HTTP handler")
 	go func() {
 		http.App.Use(cors.New(cors.Config{
-			AllowOrigins:     []string{"*"},
+			AllowOrigins:     []string{fmt.Sprintf("%s:%d", conf.GlobalConf.WebClient.Host, conf.GlobalConf.WebClient.Port)},
 			AllowMethods:     []string{"GET,POST,PUT,DELETE,OPTIONS"},
-			AllowHeaders:     []string{"Content-Type", "Authorization", "X-Requested-With", "X-Share-Duration"},
-			AllowCredentials: false,
+			AllowHeaders:     []string{"Content-Type", "Authorization", "X-Original-Filename", "X-Share-Duration"},
+			AllowCredentials: true,
 			MaxAge:           300,
 		}))
 		http.App.Use(func(c fiber.Ctx) error {

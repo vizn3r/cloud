@@ -2,6 +2,7 @@ package fs
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"os"
 	"strings"
@@ -58,7 +59,7 @@ func FindFile(fileID string) (File, error) {
 	return file, nil
 }
 
-func (file File) SaveFile() (string, error) {
+func (file File) SaveFile(db *sql.DB, ownerID string) (string, error) {
 	id := uuid.New().String()
 	file.Meta.FileUUID = id
 
@@ -83,6 +84,16 @@ func (file File) SaveFile() (string, error) {
 	if err := os.Rename(temp, final); err != nil {
 		os.Remove(temp)
 		return "", err
+	}
+
+	// Store file ownership in database if database connection and owner ID are provided
+	if db != nil && ownerID != "" {
+		_, err = db.Exec("INSERT INTO files (id, owner_id) VALUES (?, ?)", id, ownerID)
+		if err != nil {
+			// If database insertion fails, clean up the file
+			os.Remove("storage/" + id)
+			return "", err
+		}
 	}
 
 	return id, nil

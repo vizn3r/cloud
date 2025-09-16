@@ -1,6 +1,7 @@
 package http
 
 import (
+	"cloud-server/auth"
 	"cloud-server/db"
 	"cloud-server/user"
 	"time"
@@ -10,6 +11,9 @@ import (
 
 func userRouter(api fiber.Router, db *db.DB) {
 	usr := api.Group("/user")
+
+	// Protected routes require authentication
+	protected := usr.Group("")
 
 	usr.Post("/register", func(c fiber.Ctx) error {
 		type RegisterRequest struct {
@@ -71,20 +75,8 @@ func userRouter(api fiber.Router, db *db.DB) {
 		})
 	})
 
-	usr.Get("/me", func(c fiber.Ctx) error {
-		token := c.Get("Authorization")
-		if token == "" {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Authorization token required",
-			})
-		}
-
-		userID, err := user.ValidateSession(db, token)
-		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Invalid or expired session",
-			})
-		}
+	protected.Get("/me", auth.RequireToken(db), func(c fiber.Ctx) error {
+		userID := c.Locals("userID").(string)
 
 		userInfo, err := user.GetUserByID(db, userID)
 		if err != nil {
