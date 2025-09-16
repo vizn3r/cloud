@@ -25,10 +25,10 @@ func shareRouter(api fiber.Router, db *db.DB) {
 	})
 
 	share.Post("/:fid", func(c fiber.Ctx) error {
-		durationStr := c.Get("X-Share-Duration", "3600")
+		durationStr := c.Get("X-Share-Duration", "1440")
 		duration, err := strconv.Atoi(durationStr)
-		if err != nil {
-			duration = 3600
+		if err != nil || duration < 1 || duration > 10080 { // 1 min to 1 week max
+			duration = 1440
 		}
 		fid := c.Params("fid")
 		shareID, err := fs.CreateShare(db, fid, time.Duration(duration))
