@@ -31,7 +31,7 @@ func shareRouter(api fiber.Router, db *db.DB) {
 			duration = 1440
 		}
 		fid := c.Params("fid")
-		shareID, err := fs.CreateShare(db, fid, time.Duration(duration))
+		shareID, err := fs.CreateShare(db, fid, time.Duration(duration)*time.Minute)
 		if err != nil {
 			log.Println(err)
 			return c.SendStatus(fiber.StatusInternalServerError)
