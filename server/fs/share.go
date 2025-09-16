@@ -9,9 +9,9 @@ import (
 	"github.com/google/uuid"
 )
 
-func CreateShare(data *db.DB, fileID string) (string, error) {
+func CreateShare(data *db.DB, fileID string, duration time.Duration) (string, error) {
 	shareID := uuid.New().String()
-	_, err := data.Connection.Exec(db.Q_SHARE_INSERT, shareID, fileID, time.Now().Add(24*time.Hour))
+	_, err := data.Connection.Exec(db.Q_SHARE_INSERT, shareID, fileID, time.Now().Add(duration))
 	return shareID, err
 }
 

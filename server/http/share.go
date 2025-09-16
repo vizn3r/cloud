@@ -4,6 +4,8 @@ import (
 	"cloud-server/db"
 	"cloud-server/fs"
 	"log"
+	"strconv"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
 )
@@ -23,8 +25,13 @@ func shareRouter(api fiber.Router, db *db.DB) {
 	})
 
 	share.Post("/:fid", func(c fiber.Ctx) error {
+		durationStr := c.Get("X-Share-Duration", "3600")
+		duration, err := strconv.Atoi(durationStr)
+		if err != nil {
+			duration = 3600
+		}
 		fid := c.Params("fid")
-		shareID, err := fs.CreateShare(db, fid)
+		shareID, err := fs.CreateShare(db, fid, time.Duration(duration))
 		if err != nil {
 			log.Println(err)
 			return c.SendStatus(fiber.StatusInternalServerError)
