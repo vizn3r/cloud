@@ -3,17 +3,16 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title></title>
+    <title>Cloud File Manager</title>
     <link href="/css/style.css" rel="stylesheet">
-    <!-- HTMX/Tailwind imports-->
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.7/dist/htmx.min.js" integrity="sha384-ZBXiYtYQ6hJ2Y0ZNoYuI+Nq5MqWBr+chMrS/RkXpNzQCApHEhOt2aY8EJgqwHLkJ" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   </head>
   <body>
     <div class="app">
       <div class="header">
-        <h1>File Share</h1>
-        <div class="subtitle">Upload and share files easily</div>
+        <h1>Cloud File Manager</h1>
+        <div class="subtitle">Upload, manage and share your files</div>
         <div class="user-info">
           <span id="userEmail"></span>
           <button onclick="logout()" class="btn btn-logout">Logout</button>
@@ -23,41 +22,71 @@
       <div class="card">
         <form id="uploadForm" enctype="multipart/form-data" class="form-group">
           <div class="file-input-wrapper">
-            <input type="file" name="file" id="fileInput" class="file-input" required>
+            <input type="file" name="file" id="fileInput" class="file-input" multiple required>
           </div>
           <button type="button" onclick="uploadFile()" class="btn">Upload File</button>
         </form>
 
         <div id="response" class="response"></div>
-
-        <button id="shareButton" type="button" onclick="generateShareLink()" class="btn" style="display: none;">
-          Generate Share Link
-        </button>
-
-        <div id="shareLink" class="share-section" style="display: none;">
-          <div class="share-input">
-            <input type="text" id="shareLinkInput" readonly>
-            <button type="button" onclick="copyShareLink()" class="copy-btn">Copy</button>
-          </div>
-        </div>
       </div>
 
       <div class="divider"></div>
 
       <div class="card">
-        <div class="fetch-section">
-          <div class="file-input-group">
-            <input type="text" id="file_id" placeholder="Enter File ID" required>
-            <button type="button" onclick="updateUrl()" class="btn">Get File</button>
+        <h2>Your Files</h2>
+        <div id="filesContainer" class="files-gallery">
+          <div class="loading">Loading your files...</div>
+        </div>
+      </div>
+
+      <div id="shareModal" class="modal">
+        <div class="modal-content">
+          <span class="close" onclick="closeShareModal()">&times;</span>
+          <h3>Share File</h3>
+          <p>Share link for file: <span id="shareFileName"></span></p>
+          <div class="share-input">
+            <input type="text" id="shareLinkInput" readonly>
+            <button type="button" onclick="copyShareLink()" class="copy-btn">Copy</button>
+          </div>
+          <p class="share-expiry">Link expires in 7 days</p>
+        </div>
+      </div>
+
+      <div id="notification" class="notification">
+        <span id="notificationMessage"></span>
+      </div>
+
+      <div id="deleteModal" class="modal">
+        <div class="modal-content">
+          <h3>Confirm Delete</h3>
+          <p>Are you sure you want to delete this file? This action cannot be undone.</p>
+          <div class="modal-actions">
+            <button onclick="confirmDelete()" class="btn btn-delete">Delete</button>
+            <button onclick="cancelDelete()" class="btn btn-cancel">Cancel</button>
           </div>
         </div>
-        <img src="" id="f_response" class="img-preview">
       </div>
     </div>
-    <script>
-      let currentFileId = null;
 
-      // Check authentication on page load
+    <script>
+      let userFiles = [];
+      let currentShareFileId = null;
+      let currentDeleteFileId = null;
+
+      function showNotification(message, type = 'success') {
+        const notification = document.getElementById('notification');
+        const messageEl = document.getElementById('notificationMessage');
+
+        messageEl.textContent = message;
+        notification.className = `notification ${type} show`;
+
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+          notification.className = 'notification';
+        }, 3000);
+      }
+
+      // Check authentication and load files on page load
       document.addEventListener('DOMContentLoaded', function() {
         const token = localStorage.getItem('authToken');
 
@@ -65,6 +94,12 @@
           window.location.href = '/login';
           return;
         }
+
+        verifyTokenAndLoadFiles();
+      });
+
+      function verifyTokenAndLoadFiles() {
+        const token = localStorage.getItem('authToken');
 
         // Verify token and get user info
         fetch('http://localhost:8080/user/me', {
@@ -84,6 +119,7 @@
         .then(userInfo => {
           if (userInfo) {
             document.getElementById('userEmail').textContent = userInfo.email;
+            loadUserFiles();
           }
         })
         .catch(error => {
@@ -92,63 +128,135 @@
           localStorage.removeItem('userId');
           window.location.href = '/login';
         });
-      });
+      }
 
-      function logout() {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userId');
-        window.location.href = '/login';
+      function loadUserFiles() {
+        const token = localStorage.getItem('authToken');
+
+        fetch('http://localhost:8080/user/files', {
+          headers: {
+            'Authorization': 'Bearer ' + token
+          }
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Failed to load files');
+          }
+          return response.json();
+        })
+        .then(data => {
+          userFiles = data.files || [];
+          renderFilesGallery();
+        })
+        .catch(error => {
+          console.error('Error loading files:', error);
+          document.getElementById('filesContainer').innerHTML =
+            '<div class="error">Error loading files: ' + error.message + '</div>';
+        });
+      }
+
+      function renderFilesGallery() {
+        const container = document.getElementById('filesContainer');
+
+        if (userFiles.length === 0) {
+          container.innerHTML = '<div class="empty-state">No files uploaded yet</div>';
+          return;
+        }
+
+        container.innerHTML = userFiles.map(fileId => `
+          <div class="file-card" data-file-id="${fileId}">
+            <div class="file-icon">📄</div>
+            <div class="file-info">
+              <div class="file-id">${fileId}</div>
+              <div class="file-actions">
+                <button onclick="downloadFile('${fileId}')" class="btn-action btn-download">Download</button>
+                <button onclick="shareFile('${fileId}')" class="btn-action btn-share">Share</button>
+                <button onclick="deleteFile('${fileId}')" class="btn-action btn-delete">Delete</button>
+              </div>
+            </div>
+          </div>
+        `).join('');
       }
 
       function uploadFile() {
         const fileInput = document.getElementById('fileInput');
-        const file = fileInput.files[0];
+        const files = fileInput.files;
 
-        if (!file) {
-          alert('Please select a file first');
+        if (!files || files.length === 0) {
+          showNotification('Please select at least one file', 'error');
           return;
         }
 
-        const formData = new FormData();
-        formData.append('file', file);
-
-        // Make the request to your external endpoint with auth token
         const token = localStorage.getItem('authToken');
-        fetch('http://localhost:8080/file', {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + token
-          },
-          body: formData
-        })
-        .then(response => response.text())
-        .then(data => {
-          const responseEl = document.getElementById('response');
-          responseEl.innerHTML = 'File uploaded successfully! File ID: ' + data;
-          responseEl.className = 'response success';
-          currentFileId = data;
-          document.getElementById('shareButton').style.display = 'block';
-          document.getElementById('shareLink').style.display = 'none';
-        })
-        .catch(error => {
-          const responseEl = document.getElementById('response');
-          responseEl.innerHTML = 'Error: ' + error.message;
-          responseEl.className = 'response error';
-          currentFileId = null;
-          document.getElementById('shareButton').style.display = 'none';
-          document.getElementById('shareLink').style.display = 'none';
+        const responseEl = document.getElementById('response');
+
+        // Upload each file
+        Array.from(files).forEach((file, index) => {
+          const formData = new FormData();
+          formData.append('file', file);
+
+          fetch('http://localhost:8080/file', {
+            method: 'POST',
+            headers: {
+              'Authorization': 'Bearer ' + token
+            },
+            body: formData
+          })
+          .then(response => response.text())
+          .then(fileId => {
+            responseEl.innerHTML = `File "${file.name}" uploaded successfully! File ID: ${fileId}`;
+            responseEl.className = 'response success';
+
+            // Reload files after upload
+            if (index === files.length - 1) {
+              loadUserFiles();
+            }
+          })
+          .catch(error => {
+            responseEl.innerHTML = `Error uploading "${file.name}": ` + error.message;
+            responseEl.className = 'response error';
+          });
         });
       }
 
-      function generateShareLink() {
-        if (!currentFileId) {
-          alert('No file has been uploaded yet');
-          return;
-        }
-
-        // Create a share for the file with auth token
+      function downloadFile(fileId) {
         const token = localStorage.getItem('authToken');
-        fetch(`http://localhost:8080/share/${currentFileId}`, {
+
+        fetch(`http://localhost:8080/file/${fileId}`, {
+          headers: {
+            'Authorization': 'Bearer ' + token
+          }
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Failed to download file');
+          }
+          return response.blob();
+        })
+        .then(blob => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `file-${fileId}`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        })
+        .catch(error => {
+          showNotification('Error downloading file: ' + error.message, 'error');
+        });
+      }
+
+      function shareFile(fileId) {
+        currentShareFileId = fileId;
+        const token = localStorage.getItem('authToken');
+
+        document.getElementById('shareFileName').textContent = fileId;
+        document.getElementById('shareModal').classList.add('show');
+
+        // Create share link
+        fetch(`http://localhost:8080/share/${fileId}`, {
           method: 'POST',
           headers: {
             'Authorization': 'Bearer ' + token,
@@ -159,43 +267,82 @@
         .then(shareId => {
           const shareLink = `http://localhost:8080/share/${shareId}`;
           document.getElementById('shareLinkInput').value = shareLink;
-          document.getElementById('shareLink').style.display = 'block';
         })
         .catch(error => {
-          alert('Error creating share: ' + error.message);
+          showNotification('Error creating share: ' + error.message, 'error');
+          closeShareModal();
         });
+      }
+
+      function closeShareModal() {
+        document.getElementById('shareModal').classList.remove('show');
+        currentShareFileId = null;
       }
 
       function copyShareLink() {
         const shareLinkInput = document.getElementById('shareLinkInput');
         shareLinkInput.select();
         document.execCommand('copy');
-        alert('Share link copied to clipboard!');
+        showNotification('Share link copied to clipboard!');
       }
 
-      function updateUrl() {
-        const fileId = document.getElementById('file_id').value;
-        const token = localStorage.getItem('authToken');
+      function deleteFile(fileId) {
+        currentDeleteFileId = fileId;
+        document.getElementById('deleteModal').classList.add('show');
+      }
 
-        // Use fetch to get the file with authentication
+      function confirmDelete() {
+        if (!currentDeleteFileId) return;
+
+        const token = localStorage.getItem('authToken');
+        const fileId = currentDeleteFileId;
+
         fetch(`http://localhost:8080/file/${fileId}`, {
+          method: 'DELETE',
           headers: {
             'Authorization': 'Bearer ' + token
           }
         })
         .then(response => {
-          if (!response.ok) {
-            throw new Error('Failed to get file');
+          if (response.ok) {
+            // Remove from local list and re-render
+            userFiles = userFiles.filter(id => id !== fileId);
+            renderFilesGallery();
+            showNotification('File deleted successfully');
+          } else {
+            throw new Error('Failed to delete file');
           }
-          return response.blob();
-        })
-        .then(blob => {
-          const url = URL.createObjectURL(blob);
-          document.getElementById('f_response').src = url;
         })
         .catch(error => {
-          alert('Error fetching file: ' + error.message);
+          showNotification('Error deleting file: ' + error.message, 'error');
+        })
+        .finally(() => {
+          cancelDelete();
         });
+      }
+
+      function cancelDelete() {
+        currentDeleteFileId = null;
+        document.getElementById('deleteModal').classList.remove('show');
+      }
+
+      function logout() {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userId');
+        window.location.href = '/login';
+      }
+
+      // Close modals when clicking outside
+      window.onclick = function(event) {
+        const shareModal = document.getElementById('shareModal');
+        const deleteModal = document.getElementById('deleteModal');
+
+        if (event.target === shareModal) {
+          closeShareModal();
+        }
+        if (event.target === deleteModal) {
+          cancelDelete();
+        }
       }
     </script>
   </body>

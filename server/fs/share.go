@@ -3,6 +3,7 @@ package fs
 import (
 	"cloud-server/db"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -12,6 +13,9 @@ import (
 func CreateShare(data *db.DB, fileID string, duration time.Duration) (string, error) {
 	shareID := uuid.New().String()
 	_, err := data.Connection.Exec(db.Q_SHARE_INSERT, shareID, fileID, time.Now().Add(duration))
+	if err != nil {
+		log.Printf("Failed to create share for file %s: %v", fileID, err)
+	}
 	return shareID, err
 }
 
@@ -27,6 +31,7 @@ func FindFileByShare(data *db.DB, shareID string) (File, error) {
 
 	err := data.Connection.QueryRow(db.Q_SHARE_FIND_BY_ID, shareID).Scan(&fileID, &downloads, &expiresAt)
 	if err != nil {
+		log.Printf("Failed to find share %s: %v", shareID, err)
 		return File{}, err
 	}
 

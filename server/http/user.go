@@ -12,9 +12,6 @@ import (
 func userRouter(api fiber.Router, db *db.DB) {
 	usr := api.Group("/user")
 
-	// Protected routes require authentication
-	protected := usr.Group("")
-
 	usr.Post("/register", func(c fiber.Ctx) error {
 		type RegisterRequest struct {
 			Email    string `json:"email"`
@@ -35,9 +32,18 @@ func userRouter(api fiber.Router, db *db.DB) {
 			})
 		}
 
+		// Create session and return token (auto-login after registration)
+		token, err := user.CreateSession(db, userID, 24*time.Hour)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to create session",
+			})
+		}
+
 		return c.JSON(fiber.Map{
 			"message": "User created successfully",
 			"user_id": userID,
+			"token": token,
 		})
 	})
 
@@ -75,7 +81,7 @@ func userRouter(api fiber.Router, db *db.DB) {
 		})
 	})
 
-	protected.Get("/me", auth.RequireToken(db), func(c fiber.Ctx) error {
+	usr.Get("/me", auth.RequireToken(db), func(c fiber.Ctx) error {
 		userID := c.Locals("userID").(string)
 
 		userInfo, err := user.GetUserByID(db, userID)
@@ -89,6 +95,21 @@ func userRouter(api fiber.Router, db *db.DB) {
 			"id":         userInfo.ID,
 			"email":      userInfo.Email,
 			"created_at": userInfo.CreatedAt,
+		})
+	})
+
+	usr.Get("/files", auth.RequireToken(db), func(c fiber.Ctx) error {
+		userID := c.Locals("userID").(string)
+
+		files, err := user.GetUserFiles(db, userID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to get files",
+			})
+		}
+
+		return c.JSON(fiber.Map{
+			"files": files,
 		})
 	})
 }

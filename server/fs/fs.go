@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -28,6 +30,7 @@ const META_SEPARATOR = "\n---FILEDATA---\n"
 
 func FindFile(fileID string) (File, error) {
 	if err := os.MkdirAll("storage/temp", 0700); err != nil {
+		log.Printf("Failed to create temp directory: %v", err)
 		return File{}, err
 	}
 
@@ -38,6 +41,7 @@ func FindFile(fileID string) (File, error) {
 
 	data, err := os.ReadFile("storage/" + fileID)
 	if err != nil {
+		log.Printf("Failed to read file %s: %v", fileID, err)
 		return File{}, err
 	}
 	file := File{}
@@ -53,6 +57,7 @@ func FindFile(fileID string) (File, error) {
 	file.Data = data[sepIndex+len(sepBytes):]
 
 	if err := json.Unmarshal(metaBytes, &file.Meta); err != nil {
+		log.Printf("Failed to unmarshal metadata for file %s: %v", fileID, err)
 		return file, err
 	}
 
@@ -65,6 +70,7 @@ func (file File) SaveFile(db *sql.DB, ownerID string) (string, error) {
 
 	metaJSON, err := json.Marshal(file.Meta)
 	if err != nil {
+		log.Printf("Failed to marshal file metadata: %v", err)
 		return "", err
 	}
 
@@ -78,11 +84,13 @@ func (file File) SaveFile(db *sql.DB, ownerID string) (string, error) {
 
 	err = os.WriteFile(temp, comb.Bytes(), 0600)
 	if err != nil {
+		log.Printf("Failed to write temp file %s: %v", temp, err)
 		return "", err
 	}
 
 	if err := os.Rename(temp, final); err != nil {
 		os.Remove(temp)
+		log.Printf("Failed to rename temp file %s to %s: %v", temp, final, err)
 		return "", err
 	}
 
@@ -91,12 +99,39 @@ func (file File) SaveFile(db *sql.DB, ownerID string) (string, error) {
 		_, err = db.Exec("INSERT INTO files (id, owner_id) VALUES (?, ?)", id, ownerID)
 		if err != nil {
 			// If database insertion fails, clean up the file
+			log.Printf("Failed to insert file %s into database: %v", id, err)
 			os.Remove("storage/" + id)
 			return "", err
 		}
 	}
 
 	return id, nil
+}
+
+func DeleteFile(fileID string, db *sql.DB) error {
+	// Validate file ID to prevent path traversal
+	if !isValidFileID(fileID) {
+		return fmt.Errorf("invalid file ID")
+	}
+
+	// Delete from filesystem first
+	err := os.Remove("storage/" + fileID)
+	if err != nil && !os.IsNotExist(err) {
+		log.Printf("Failed to delete file %s from filesystem: %v", fileID, err)
+		return err
+	}
+
+	// Delete from database if database connection is provided
+	if db != nil {
+		_, err = db.Exec("DELETE FROM files WHERE id = ?", fileID)
+		if err != nil {
+			log.Printf("Failed to delete file %s from database: %v", fileID, err)
+			return err
+		}
+	}
+
+	log.Printf("Successfully deleted file: %s", fileID)
+	return nil
 }
 
 func isValidFileID(fileID string) bool {

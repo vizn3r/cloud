@@ -72,17 +72,21 @@
         })
         .then(data => {
           const messageEl = document.getElementById('registerMessage');
-          messageEl.textContent = 'Registration successful! You can now login.';
+          messageEl.textContent = 'Registration successful! Logging you in...';
           messageEl.className = 'response success';
           messageEl.style.display = 'block';
+
+          // Store token and user ID for auto-login
+          localStorage.setItem('authToken', data.token);
+          localStorage.setItem('userId', data.user_id);
 
           // Clear form
           document.getElementById('registerForm').reset();
 
-          // Auto-redirect to login after 2 seconds
+          // Auto-redirect to app after 1 second
           setTimeout(() => {
-            window.location.href = '/login';
-          }, 2000);
+            window.location.href = '/app';
+          }, 1000);
         })
         .catch(error => {
           const messageEl = document.getElementById('registerMessage');

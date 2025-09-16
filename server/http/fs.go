@@ -119,6 +119,19 @@ func fsRouter(api fiber.Router, data *db.DB) {
 		log.Println("Uploaded file:", id, "by user:", userID)
 		return c.SendString(id)
 	})
+
+	files.Delete("/:fid", auth.RequireToken(data), auth.RequireFileOwnership(data), func(c fiber.Ctx) error {
+		fid := c.Params("fid")
+
+		err := fs.DeleteFile(fid, data.Connection)
+		if err != nil {
+			log.Printf("Failed to delete file %s: %v", fid, err)
+			return c.Status(fiber.StatusInternalServerError).SendString("Failed to delete file")
+		}
+
+		log.Printf("Deleted file: %s by user: %s", fid, c.Locals("userID").(string))
+		return c.SendStatus(fiber.StatusOK)
+	})
 }
 
 func isSafeFilename(filename string) bool {
