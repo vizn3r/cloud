@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,12 +25,17 @@ type File struct {
 
 const META_SEPARATOR = "\n---FILEDATA---\n"
 
-func FindFile(path string) (File, error) {
-	if err := os.MkdirAll("storage/temp", 0755); err != nil {
+func FindFile(fileID string) (File, error) {
+	if err := os.MkdirAll("storage/temp", 0700); err != nil {
 		return File{}, err
 	}
 
-	data, err := os.ReadFile("storage/" + path)
+	// Validate file ID to prevent path traversal
+	if !isValidFileID(fileID) {
+		return File{}, os.ErrNotExist
+	}
+
+	data, err := os.ReadFile("storage/" + fileID)
 	if err != nil {
 		return File{}, err
 	}
@@ -69,7 +75,7 @@ func (file File) SaveFile() (string, error) {
 	temp := "storage/temp/" + id
 	final := "storage/" + id
 
-	err = os.WriteFile(temp, comb.Bytes(), 0644)
+	err = os.WriteFile(temp, comb.Bytes(), 0600)
 	if err != nil {
 		return "", err
 	}
@@ -80,4 +86,24 @@ func (file File) SaveFile() (string, error) {
 	}
 
 	return id, nil
+}
+
+func isValidFileID(fileID string) bool {
+	// Validate that fileID is a valid UUID and doesn't contain path traversal characters
+	if len(fileID) != 36 {
+		return false
+	}
+
+	// Check for path traversal characters
+	if strings.Contains(fileID, "/") || strings.Contains(fileID, "..") || strings.Contains(fileID, "\\") {
+		return false
+	}
+
+	// Basic UUID format validation (simple check, can be enhanced)
+	parts := strings.Split(fileID, "-")
+	if len(parts) != 5 {
+		return false
+	}
+
+	return true
 }

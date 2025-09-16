@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gabriel-vasile/mimetype"
@@ -53,10 +54,23 @@ func fsRouter(api fiber.Router, db *db.DB) {
 	})
 
 	files.Post("/", func(c fiber.Ctx) error {
+		// File upload size limit: 50MB
+		const maxUploadSize = 50 * 1024 * 1024
+
 		var data []byte
 		ogName := ""
 		file, err := c.FormFile("file")
 		if err == nil {
+			// Validate file size
+			if file.Size > maxUploadSize {
+				return c.Status(fiber.StatusRequestEntityTooLarge).SendString("File too large")
+			}
+
+			// Validate file name
+			if !isSafeFilename(file.Filename) {
+				return c.Status(fiber.StatusBadRequest).SendString("Invalid filename")
+			}
+
 			ogName = file.Filename
 			opened, err := file.Open()
 			if err != nil {
@@ -72,6 +86,10 @@ func fsRouter(api fiber.Router, db *db.DB) {
 				return c.SendStatus(fiber.StatusInternalServerError)
 			}
 		} else {
+			// Validate raw body size
+			if len(c.BodyRaw()) > maxUploadSize {
+				return c.Status(fiber.StatusRequestEntityTooLarge).SendString("Request too large")
+			}
 			data = c.BodyRaw()
 		}
 
@@ -95,4 +113,21 @@ func fsRouter(api fiber.Router, db *db.DB) {
 		log.Println("Uploaded file: ", id)
 		return c.SendString(id)
 	})
+}
+
+func isSafeFilename(filename string) bool {
+	// Prevent path traversal and malicious filenames
+	if strings.Contains(filename, "..") || strings.Contains(filename, "/") || strings.Contains(filename, "\\") {
+		return false
+	}
+
+	// Prevent potentially dangerous extensions
+	blacklist := []string{".exe", ".bat", ".cmd", ".sh", ".php", ".py", ".js", ".html"}
+	for _, ext := range blacklist {
+		if strings.HasSuffix(strings.ToLower(filename), ext) {
+			return false
+		}
+	}
+
+	return true
 }

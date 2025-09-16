@@ -15,7 +15,7 @@ func main() {
 	conf.LoadConfig("./server.json")
 
 	if _, err := os.Stat("storage"); os.IsNotExist(err) {
-		err := os.MkdirAll("storage/temp", 0755)
+		err := os.MkdirAll("storage/temp", 0700)
 		if err != nil {
 			log.Fatal(err)
 		}

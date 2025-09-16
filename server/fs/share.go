@@ -3,6 +3,7 @@ package fs
 import (
 	"cloud-server/db"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,6 +16,11 @@ func CreateShare(data *db.DB, fileID string) (string, error) {
 }
 
 func FindFileByShare(data *db.DB, shareID string) (File, error) {
+	// Validate share ID format
+	if len(shareID) != 36 || strings.Contains(shareID, "/") || strings.Contains(shareID, "..") {
+		return File{}, fmt.Errorf("invalid share ID")
+	}
+
 	var fileID string
 	var downloads int
 	var expiresAt *time.Time

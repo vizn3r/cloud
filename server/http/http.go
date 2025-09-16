@@ -26,10 +26,15 @@ func (http *HTTP) Start() {
 	log.Println("Starting HTTP handler")
 	go func() {
 		http.App.Use(cors.New(cors.Config{
-			AllowOrigins: []string{conf.GlobalConf.WebClient.Host + fmt.Sprintf(":%d", conf.GlobalConf.WebClient.Port)},
+			AllowOrigins:     []string{conf.GlobalConf.WebClient.Host + fmt.Sprintf(":%d", conf.GlobalConf.WebClient.Port)},
+			AllowMethods:     []string{"GET,POST,PUT,DELETE,OPTIONS"},
+			AllowHeaders:     []string{"Content-Type,Authorization,X-Requested-With"},
+			AllowCredentials: true,
+			MaxAge:           300,
 		}))
 		http.App.Use(func(c fiber.Ctx) error {
-			log.Println("New req: ", c.Request().String())
+			// Log request method and path only (not full request to avoid logging sensitive data)
+			log.Println("Request: ", c.Method(), c.Path())
 			return c.Next()
 		})
 		v1 := http.App.Group("/")
