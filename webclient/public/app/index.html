@@ -10,36 +10,61 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   </head>
   <body>
-    <p>sexy mommy thighs 2</p>
-    <form id="uploadForm" enctype="multipart/form-data">
-      <input type='file' name='file' id="fileInput" required>
-      <br><br>
-      <button type="button" onclick="uploadFile()">Upload</button>
-    </form>
-    
-    <div id="response"></div>
-    <div class="form-container">
-      <form>
-        <label for="file_id">Enter File ID:</label>
-        <input type="text" id="file_id" name="file_id" required>
-        <button type="button" onclick="updateUrl()">Get File</button>
-      </form>
+    <div class="app">
+      <div class="header">
+        <h1>File Share</h1>
+        <div class="subtitle">Upload and share files easily</div>
+      </div>
+
+      <div class="card">
+        <form id="uploadForm" enctype="multipart/form-data" class="form-group">
+          <div class="file-input-wrapper">
+            <input type="file" name="file" id="fileInput" class="file-input" required>
+          </div>
+          <button type="button" onclick="uploadFile()" class="btn">Upload File</button>
+        </form>
+
+        <div id="response" class="response"></div>
+
+        <button id="shareButton" type="button" onclick="generateShareLink()" class="btn" style="display: none;">
+          Generate Share Link
+        </button>
+
+        <div id="shareLink" class="share-section" style="display: none;">
+          <div class="share-input">
+            <input type="text" id="shareLinkInput" readonly>
+            <button type="button" onclick="copyShareLink()" class="copy-btn">Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="card">
+        <div class="fetch-section">
+          <div class="file-input-group">
+            <input type="text" id="file_id" placeholder="Enter File ID" required>
+            <button type="button" onclick="updateUrl()" class="btn">Get File</button>
+          </div>
+        </div>
+        <img src="" id="f_response" class="img-preview">
+      </div>
     </div>
-    <img src="" id="f_response">
-    <img src="https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fi.pinimg.com%2Foriginals%2Fa8%2F1f%2Ff0%2Fa81ff008b4237d38bceb9d475e6cbb0e.jpg" alt="ur loss again :(">
     <script>
+      let currentFileId = null;
+
       function uploadFile() {
         const fileInput = document.getElementById('fileInput');
         const file = fileInput.files[0];
-        
+
         if (!file) {
           alert('Please select a file first');
           return;
         }
-        
+
         const formData = new FormData();
         formData.append('file', file);
-        
+
         // Make the request to your external endpoint
         fetch('http://localhost:8080/file', {
           method: 'POST',
@@ -47,20 +72,60 @@
         })
         .then(response => response.text())
         .then(data => {
-          document.getElementById('response').innerHTML = data;
+          const responseEl = document.getElementById('response');
+          responseEl.innerHTML = 'File uploaded successfully! File ID: ' + data;
+          responseEl.className = 'response success';
+          currentFileId = data;
+          document.getElementById('shareButton').style.display = 'block';
+          document.getElementById('shareLink').style.display = 'none';
         })
         .catch(error => {
-          document.getElementById('response').innerHTML = 'Error: ' + error.message;
+          const responseEl = document.getElementById('response');
+          responseEl.innerHTML = 'Error: ' + error.message;
+          responseEl.className = 'response error';
+          currentFileId = null;
+          document.getElementById('shareButton').style.display = 'none';
+          document.getElementById('shareLink').style.display = 'none';
         });
       }
-    </script>
-    <script>
-        function updateUrl() {
-            const fileId = document.getElementById('file_id').value;
-            const form = document.querySelector('form');
-            form.setAttribute('hx-get', `http://localhost:8080/file/${fileId}`);
-            document.getElementById('f_response').src = `http://localhost:8080/file/${fileId}`
+
+      function generateShareLink() {
+        if (!currentFileId) {
+          alert('No file has been uploaded yet');
+          return;
         }
+
+        // Create a share for the file
+        fetch(`http://localhost:8080/share/${currentFileId}`, {
+          method: 'POST',
+          headers: {
+            'X-Share-Duration': '10080' // 1 week in minutes
+          }
+        })
+        .then(response => response.text())
+        .then(shareId => {
+          const shareLink = `http://localhost:8080/share/${shareId}`;
+          document.getElementById('shareLinkInput').value = shareLink;
+          document.getElementById('shareLink').style.display = 'block';
+        })
+        .catch(error => {
+          alert('Error creating share: ' + error.message);
+        });
+      }
+
+      function copyShareLink() {
+        const shareLinkInput = document.getElementById('shareLinkInput');
+        shareLinkInput.select();
+        document.execCommand('copy');
+        alert('Share link copied to clipboard!');
+      }
+
+      function updateUrl() {
+        const fileId = document.getElementById('file_id').value;
+        const form = document.querySelector('form');
+        form.setAttribute('hx-get', `http://localhost:8080/file/${fileId}`);
+        document.getElementById('f_response').src = `http://localhost:8080/file/${fileId}`
+      }
     </script>
   </body>
 </html>
