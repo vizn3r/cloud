@@ -2,6 +2,7 @@ package http
 
 import (
 	"cloud-server/conf"
+	"cloud-server/db"
 	"context"
 	"fmt"
 	"log"
@@ -14,10 +15,11 @@ import (
 type HTTP struct {
 	App  *fiber.App
 	Host string
+	db   *db.DB
 }
 
-func NewHTTP(host string) *HTTP {
-	return &HTTP{App: fiber.New(fiber.Config{}), Host: host}
+func NewHTTP(host string, db *db.DB) *HTTP {
+	return &HTTP{App: fiber.New(fiber.Config{}), Host: host, db: db}
 }
 
 func (http *HTTP) Start() {
@@ -31,7 +33,8 @@ func (http *HTTP) Start() {
 			return c.Next()
 		})
 		v1 := http.App.Group("/")
-		fsRouter(v1)
+		fsRouter(v1, http.db)
+		shareRouter(v1, http.db)
 		publicRouter(v1)
 		if err := http.App.Listen(http.Host); err != nil {
 			log.Fatal(err)

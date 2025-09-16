@@ -1,6 +1,7 @@
 package http
 
 import (
+	"cloud-server/db"
 	"cloud-server/fs"
 	"encoding/json"
 	"log"
@@ -11,7 +12,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-func fsRouter(api fiber.Router) {
+func fsRouter(api fiber.Router, db *db.DB) {
 	files := api.Group("/file")
 
 	files.Get("/:fid", func(c fiber.Ctx) error {
