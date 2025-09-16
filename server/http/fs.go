@@ -5,6 +5,7 @@ import (
 	"cloud-server/db"
 	"cloud-server/fs"
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -54,6 +55,43 @@ func fsRouter(api fiber.Router, data *db.DB) {
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 		return c.Send(data)
+	})
+
+	files.Get("/:fid/thumbnail", auth.RequireToken(data), auth.RequireFileOwnership(data), func(c fiber.Ctx) error {
+		fid := c.Params("fid")
+		log.Println("Requesting thumbnail for file: ", fid)
+
+		file, err := fs.FindFile(fid)
+		if os.IsNotExist(err) {
+			log.Println(err)
+			return c.SendStatus(fiber.StatusNotFound)
+		} else if err != nil {
+			log.Println(err)
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		// Check if it's an image
+		if strings.HasPrefix(file.Meta.ContentType, "image/") {
+			// Return the actual image as thumbnail
+			c.Set("Content-Type", file.Meta.ContentType)
+			return c.Send(file.Data)
+		}
+
+		// For non-image files, generate an icon based on file extension
+		c.Set("Content-Type", "image/svg+xml")
+
+		// Extract file extension from upload name
+		extension := "file"
+		if file.Meta.UploadName != "" {
+			parts := strings.Split(file.Meta.UploadName, ".")
+			if len(parts) > 1 {
+				extension = parts[len(parts)-1]
+			}
+		}
+
+		// Generate SVG icon with file extension
+		iconSVG := generateFileIconSVG(extension)
+		return c.SendString(iconSVG)
 	})
 
 	files.Post("/", auth.RequireToken(data), func(c fiber.Ctx) error {
@@ -141,12 +179,22 @@ func isSafeFilename(filename string) bool {
 	}
 
 	// Prevent potentially dangerous extensions
-	blacklist := []string{".exe", ".bat", ".cmd", ".sh", ".php", ".py", ".js", ".html"}
-	for _, ext := range blacklist {
-		if strings.HasSuffix(strings.ToLower(filename), ext) {
-			return false
-		}
-	}
+	// ... or don't, it's my cloud, i dont fucking care xd
+	//blacklist := []string{".exe", ".bat", ".cmd", ".sh", ".php", ".py", ".js", ".html"}
+	//for _, ext := range blacklist {
+	//	if strings.HasSuffix(strings.ToLower(filename), ext) {
+	//		return false
+	//	}
+	//}
 
 	return true
+}
+
+func generateFileIconSVG(extension string) string {
+	// Simple SVG icon with file extension text
+	return fmt.Sprintf(`<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg">
+		<rect width="64" height="64" fill="#3b82f6" rx="8"/>
+		<text x="32" y="32" font-family="Arial, sans-serif" font-size="12" fill="white"
+			text-anchor="middle" dominant-baseline="middle">%s</text>
+	</svg>`, strings.ToUpper(extension))
 }
