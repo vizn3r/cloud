@@ -38,6 +38,7 @@ func (http *HTTP) Start() {
 		v1 := http.App.Group("/")
 		fsRouter(v1, http.db)
 		shareRouter(v1, http.db)
+		userRouter(v1, http.db)
 		publicRouter(v1)
 		if err := http.App.Listen(http.Host); err != nil {
 			log.Fatal(err)

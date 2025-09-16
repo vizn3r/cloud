@@ -11,4 +11,13 @@ const (
 	Q_FOLDER_INSERT          = "INSERT INTO folders (id, owner_id, file_ids) VALUES (?, ?, ?)"
 	Q_FOLDER_UPDATE_FILES    = "UPDATE folders SET file_ids = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
 	Q_FOLDER_DELETE          = "DELETE FROM folders WHERE id = ?"
+
+	Q_USER_CREATE             = "INSERT INTO users (id, email, password_hash) VALUES (?, ?, ?)"
+	Q_USER_FIND_BY_EMAIL      = "SELECT id, email, password_hash, created_at FROM users WHERE email = ?"
+	Q_USER_FIND_BY_ID         = "SELECT id, email, created_at FROM users WHERE id = ?"
+
+	Q_SESSION_CREATE          = "INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, ?)"
+	Q_SESSION_FIND_BY_TOKEN   = "SELECT user_id, expires_at FROM sessions WHERE token = ?"
+	Q_SESSION_DELETE          = "DELETE FROM sessions WHERE token = ?"
+	Q_SESSION_DELETE_EXPIRED  = "DELETE FROM sessions WHERE expires_at < CURRENT_TIMESTAMP"
 )
