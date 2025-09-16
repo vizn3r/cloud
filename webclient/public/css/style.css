@@ -143,6 +143,100 @@ h1 {
   gap: 1rem;
 }
 
+/* Login and Register specific styles */
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 1rem;
+}
+
+.login-card {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-card h1 {
+  text-align: center;
+  color: #374151;
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.input-group label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.95rem;
+}
+
+.input-group input {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  background: #f9fafb;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.btn-primary {
+  background: #3b82f6;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  width: 100%;
+}
+
+.btn-primary:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.register-link {
+  text-align: center;
+  margin-top: 1.5rem;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.register-link a {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.register-link a:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
 .file-input-wrapper {
   display: flex;
   flex-direction: column;
@@ -553,6 +647,19 @@ h1 {
     padding: 0;
   }
 
+  .login-container {
+    padding: 0.5rem;
+  }
+
+  .login-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .login-card h1 {
+    font-size: 1.75rem;
+    margin-bottom: 1.5rem;
+  }
+
   .top-nav {
     padding: 0 0.5rem;
   }
@@ -628,6 +735,24 @@ h1 {
 }
 
 @media (max-width: 480px) {
+  .login-card {
+    padding: 1.5rem 1rem;
+  }
+
+  .login-card h1 {
+    font-size: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .input-group input {
+    font-size: 0.95rem;
+  }
+
+  .btn-primary {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.95rem;
+  }
+
   .card {
     padding: 1rem;
   }
