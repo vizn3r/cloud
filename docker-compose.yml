@@ -7,7 +7,7 @@ services:
       dockerfile: server/Dockerfile
     container_name: cloud-server
     ports:
-      - "8080:8080"
+      - "8808:8080"
     environment:
       - NODE_ENV=production
     volumes:
@@ -29,7 +29,7 @@ services:
       dockerfile: webclient/Dockerfile
     container_name: cloud-webclient
     ports:
-      - "80:80"
+      - "8818:80"
     environment:
       - NODE_ENV=production
     depends_on:
