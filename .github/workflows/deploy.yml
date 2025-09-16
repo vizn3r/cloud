@@ -36,34 +36,6 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - name: Build and push server image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: server/Dockerfile
-        push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/cloud-server:latest
-
-    - name: Build and push webclient image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: webclient/Dockerfile
-        push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/cloud-webclient:latest
-
     - name: Deploy to server (SSH)
       uses: appleboy/ssh-action@v1.0.3
       with:
