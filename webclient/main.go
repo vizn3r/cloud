@@ -2,14 +2,21 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"webclient/conf"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/static"
+	_ "embed"
 )
 
+//go:embed webclient.json
+var config string
+
 func main() {
-	conf.LoadConfig("webclient.json")
+	if err := conf.LoadFromBytes([]byte(config)); err != nil {
+		log.Fatal(err)
+	}
 
 	app := fiber.New(fiber.Config{})
 

@@ -1,6 +1,7 @@
 package conf
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -28,6 +29,15 @@ func LoadConfig(path string) error {
 	if err = parser.Decode(&GlobalConf); err != nil {
 		log.Printf("Failed to decode config file %s: %v", path, err)
 		return fmt.Errorf("couldn't decode '%s' config file", path)
+	}
+
+	return nil
+}
+
+func LoadFromBytes(data []byte) error {
+	parser := json.NewDecoder(bytes.NewReader(data))
+	if err := parser.Decode(&GlobalConf); err != nil {
+		return fmt.Errorf("couldn't decode config file")
 	}
 
 	return nil

@@ -4,6 +4,7 @@ import (
 	"cloud-server/conf"
 	"cloud-server/db"
 	"cloud-server/http"
+	_ "embed"
 	"fmt"
 	"log"
 	"os"
@@ -11,8 +12,13 @@ import (
 	"syscall"
 )
 
+//go:embed server.json
+var config string
+
 func main() {
-	conf.LoadConfig("./server.json")
+	if err := conf.LoadFromBytes([]byte(config)); err != nil {
+		log.Fatal(err)
+	}
 
 	if _, err := os.Stat("storage"); os.IsNotExist(err) {
 		err := os.MkdirAll("storage/temp", 0700)
