@@ -4,7 +4,7 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
 
-  fetch('http://localhost:8080/user/login', {
+  fetch(`${API_BASE_URL}/user/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -37,7 +37,7 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
 // Check if user is already logged in
 if (localStorage.getItem('authToken')) {
   // Verify token is still valid
-  fetch('http://localhost:8080/user/me', {
+  fetch(`${API_BASE_URL}/user/me`, {
     headers: {
       'Authorization': 'Bearer ' + localStorage.getItem('authToken')
     }

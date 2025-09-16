@@ -48,7 +48,7 @@ function verifyTokenAndLoadFiles() {
   const token = localStorage.getItem('authToken');
 
   // Verify token and get user info
-  fetch('http://localhost:8080/user/me', {
+  fetch(`${API_BASE_URL}/user/me`, {
     headers: {
       'Authorization': 'Bearer ' + token
     }
@@ -81,7 +81,7 @@ async function loadUserFiles() {
 
   try {
     // First get the list of file IDs
-    const filesResponse = await fetch('http://localhost:8080/user/files', {
+    const filesResponse = await fetch(`${API_BASE_URL}/user/files`, {
       headers: {
         'Authorization': 'Bearer ' + token
       }
@@ -97,7 +97,7 @@ async function loadUserFiles() {
     // Fetch metadata for each file
     userFiles = await Promise.all(fileIds.map(async (fileId) => {
       try {
-        const metaResponse = await fetch(`http://localhost:8080/file/${fileId}/data`, {
+        const metaResponse = await fetch(`${API_BASE_URL}/file/${fileId}/data`, {
           headers: {
             'Authorization': 'Bearer ' + token
           }
@@ -132,7 +132,7 @@ async function loadThumbnailWithAuth(fileId) {
   }
 
   try {
-    const response = await fetch(`http://localhost:8080/file/${fileId}/thumbnail`, {
+    const response = await fetch(`${API_BASE_URL}/file/${fileId}/thumbnail`, {
       headers: {
         'Authorization': 'Bearer ' + token
       }
@@ -246,7 +246,7 @@ function uploadFile() {
     const formData = new FormData();
     formData.append('file', file);
 
-    fetch('http://localhost:8080/file', {
+    fetch(`${API_BASE_URL}/file`, {
       method: 'POST',
       headers: {
         'Authorization': 'Bearer ' + token
@@ -276,7 +276,7 @@ function uploadFile() {
 function downloadFile(fileId) {
   const token = localStorage.getItem('authToken');
 
-  fetch(`http://localhost:8080/file/${fileId}`, {
+  fetch(`${API_BASE_URL}/file/${fileId}`, {
     headers: {
       'Authorization': 'Bearer ' + token
     }
@@ -310,7 +310,7 @@ function shareFile(fileId) {
   document.getElementById('shareModal').classList.add('show');
 
   // Create share link
-  fetch(`http://localhost:8080/share/${fileId}`, {
+  fetch(`${API_BASE_URL}/share/${fileId}`, {
     method: 'POST',
     headers: {
       'Authorization': 'Bearer ' + token,
@@ -319,7 +319,7 @@ function shareFile(fileId) {
   })
   .then(response => response.text())
   .then(shareId => {
-    const shareLink = `http://localhost:8080/share/${shareId}`;
+    const shareLink = `${API_BASE_URL}/share/${shareId}`;
     document.getElementById('shareLinkInput').value = shareLink;
   })
   .catch(error => {
@@ -351,7 +351,7 @@ function confirmDelete() {
   const token = localStorage.getItem('authToken');
   const fileId = currentDeleteFileId;
 
-  fetch(`http://localhost:8080/file/${fileId}`, {
+  fetch(`${API_BASE_URL}/file/${fileId}`, {
     method: 'DELETE',
     headers: {
       'Authorization': 'Bearer ' + token
@@ -399,7 +399,7 @@ function previewFile(fileId) {
   document.getElementById('previewOverlay').style.display = 'flex';
 
   // Check file type and load appropriate preview
-  fetch(`http://localhost:8080/file/${fileId}`, {
+  fetch(`${API_BASE_URL}/file/${fileId}`, {
     headers: {
       'Authorization': 'Bearer ' + token
     }

@@ -13,7 +13,7 @@ document.getElementById('registerForm').addEventListener('submit', function(e) {
     return;
   }
 
-  fetch('http://localhost:8080/user/register', {
+  fetch(`${API_BASE_URL}/user/register`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -55,7 +55,7 @@ document.getElementById('registerForm').addEventListener('submit', function(e) {
 // Check if user is already logged in
 if (localStorage.getItem('authToken')) {
   // Verify token is still valid
-  fetch('http://localhost:8080/user/me', {
+  fetch(`${API_BASE_URL}/user/me`, {
     headers: {
       'Authorization': 'Bearer ' + localStorage.getItem('authToken')
     }
