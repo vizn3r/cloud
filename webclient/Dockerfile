@@ -1,28 +1,43 @@
-FROM nginx:alpine
+FROM golang:1.25-alpine AS builder
 
-# Install bash for scripting
-RUN apk add --no-cache curl
+WORKDIR /app
 
-# Create nginx user and group
-RUN addgroup -g 1001 -S nginx && \
-    adduser -u 1001 -S nginx -G nginx
+# Copy go mod and sum files
+COPY webclient/go.mod webclient/go.sum ./
 
-# Copy static files
-COPY webclient/public/ /usr/share/nginx/html/
+# Download dependencies
+RUN go mod download
 
-# Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+# Copy source code
+COPY webclient/ ./
+
+# Build the application
+RUN go build -o main .
+
+FROM alpine:latest
+
+WORKDIR /app
+
+# Copy the binary from builder
+COPY --from=builder /app/main .
+COPY --from=builder /app/public ./public
+
+# Create non-root user
+RUN addgroup -g 1001 -S app && \
+    adduser -u 1001 -S app -G app
 
 # Set proper ownership
-RUN chown -R nginx:nginx /usr/share/nginx/html && \
-    chmod -R 755 /usr/share/nginx/html
+RUN chown -R app:app /app
 
-# Expose port 80
-EXPOSE 80
+# Switch to non-root user
+USER app
+
+# Expose port (default Fiber port is 3000)
+EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost/ || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Start the application
+CMD ["./main"]
