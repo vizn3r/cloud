@@ -26,7 +26,13 @@ func (http *HTTP) Start() {
 	log.Println("Starting HTTP handler")
 	go func() {
 		http.App.Use(cors.New(cors.Config{
-			AllowOrigins:     []string{fmt.Sprintf("%s:%d", conf.GlobalConf.WebClient.Host, conf.GlobalConf.WebClient.Port)},
+			AllowOrigins:     []string{
+				fmt.Sprintf("%s:%d", conf.GlobalConf.WebClient.Host, conf.GlobalConf.WebClient.Port),
+				"https://cloud.vizn3r.eu",
+				"http://cloud.vizn3r.eu",
+				"https://cloudapi.vizn3r.eu",
+				"http://cloudapi.vizn3r.eu",
+			},
 			AllowMethods:     []string{"GET,POST,PUT,DELETE,OPTIONS"},
 			AllowHeaders:     []string{"Content-Type", "Authorization", "X-Original-Filename", "X-Share-Duration"},
 			AllowCredentials: true,
