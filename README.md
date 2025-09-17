@@ -1,4 +1,4 @@
-# Cloud storage thingy
+# Cloud storage thingy (WIP - no official releases yet)
 
 *I just really wanted my own cloud storage thingy xd*
 
@@ -35,16 +35,8 @@
 
 - Classic cloud storage web interface
 
-### Desktop app
-*will be the same as the webclient, but with other stuff*
+### Desktop app/CLI
+*for the P2P file access*
 
 - Will make the P2P possible
-- Needed for the direct system file access
-- Can take advantage of web-to-app architecture
-
-### CLI app
-*for the people that hate UIs (me)*
-
-- Simple CLI to access files on the cloud
-- Also will make the P2P possible
-- Can also take advantage of web-to-app architecture
+- Take advantage of web-to-app architecture
