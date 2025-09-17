@@ -1,8 +1,8 @@
-FROM golang:1.25-alpine AS builder
+FROM golang:1.25-alpine3.21 AS builder
 
 WORKDIR /app
 
-# Copy go mod and sum files
+# Copy dependency files first for better caching
 COPY webclient/go.mod webclient/go.sum ./
 
 # Download dependencies
@@ -11,33 +11,30 @@ RUN go mod download
 # Copy source code
 COPY webclient/ ./
 
-# Build the application
-RUN go build -o main .
+# Build with optimizations
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -ldflags="-s -w" \
+    -trimpath \
+    -o main .
 
-FROM alpine:latest
+# Use distroless for runtime
+FROM gcr.io/distroless/static-debian12:nonroot
+
+# Copy binary and static files
+COPY --from=builder --chown=nonroot:nonroot /app/main /app/main
+COPY --from=builder --chown=nonroot:nonroot /app/public /app/public
+
+# Use nonroot user
+USER nonroot
 
 WORKDIR /app
 
-# Copy the binary from builder
-COPY --from=builder /app/main .
-COPY --from=builder /app/public ./public
-
-# Create non-root user
-RUN addgroup -g 1001 -S app && \
-    adduser -u 1001 -S app -G app
-
-# Set proper ownership
-RUN chown -R app:app /app
-
-# Switch to non-root user
-USER app
-
-# Expose port (default Fiber port is 3000)
-EXPOSE 3000
+# Expose port
+EXPOSE 8008
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+  CMD ["/app/main", "--health-check"]
 
 # Start the application
-CMD ["./main"]
+ENTRYPOINT ["/app/main"]

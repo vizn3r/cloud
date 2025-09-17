@@ -1,56 +1,47 @@
-FROM golang:1.25-alpine AS builder
+# Use a specific version for better reproducibility
+FROM golang:1.25-alpine3.21 AS builder
 
-# Install build dependencies
-RUN apk add --no-cache git gcc musl-dev
+# Install build dependencies in one layer
+RUN apk add --no-cache git gcc musl-dev ca-certificates
 
 # Set working directory
 WORKDIR /app
 
-# Copy go mod files
+# Copy dependency files first for better layer caching
 COPY server/go.mod server/go.sum ./
 
-# Download dependencies
+# Download dependencies (cached if go.mod/go.sum unchanged)
 RUN go mod download
 
 # Copy source code
 COPY server/ ./
 
-# Build the application
-RUN CGO_ENABLED=1 GOOS=linux go build -o cloud-server -ldflags="-s -w" main.go
+# Build with optimizations: static linking, smaller binary, no debug info
+RUN CGO_ENABLED=1 GOOS=linux go build \
+    -ldflags="-s -w -extldflags=-static" \
+    -trimpath \
+    -o cloud-server \
+    main.go
 
-# Final stage
-FROM alpine:3.21
+# Use distroless for minimal runtime image
+FROM gcr.io/distroless/static-debian12:nonroot
 
-# Install runtime dependencies
-RUN apk add --no-cache ca-certificates sqlite
+# Copy only the essential files
+COPY --from=builder --chown=nonroot:nonroot /app/cloud-server /app/cloud-server
+COPY --from=builder --chown=nonroot:nonroot /app/db/sql/tables.sql /app/db/sql/tables.sql
 
-# Create app user
-RUN addgroup -g 1000 -S app && \
-    adduser -u 1000 -S app -G app
-
-# Storage directory will be mounted as volume
+# Use distroless nonroot user (already configured)
+USER nonroot
 
 # Set working directory
 WORKDIR /app
 
-# Copy binary from builder
-COPY --from=builder --chown=app:app /app/cloud-server .
-
-# Copy SQLite database schema
-COPY --chown=app:app server/db/sql/tables.sql ./db/sql/
-
-# Create data directory for SQLite and set ownership
-RUN mkdir -p /data && chown -R app:app /data
-
 # Expose port
 EXPOSE 8080
 
-# Health check
+# Health check using the built-in binary
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
-
-# Switch to non-root user
-USER app
+  CMD ["/app/cloud-server", "--health-check"]
 
 # Start the application
-CMD ["./cloud-server"]
+ENTRYPOINT ["/app/cloud-server"]
