@@ -43,7 +43,7 @@ func (http *HTTP) Start() {
 			log.Println("Request: ", c.Method(), c.Path())
 			return c.Next()
 		})
-		v1 := http.App.Group("/")
+		v1 := http.App.Group("/v1")
 		fsRouter(v1, http.db)
 		shareRouter(v1, http.db)
 		userRouter(v1, http.db)
