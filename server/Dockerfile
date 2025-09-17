@@ -28,9 +28,7 @@ RUN apk add --no-cache ca-certificates sqlite
 RUN addgroup -g 1000 -S app && \
     adduser -u 1000 -S app -G app
 
-# Create storage directories and set ownership BEFORE switching user
-RUN mkdir -p /var/lib/cloud-storage && \
-    chown -R app:app /var/lib/cloud-storage
+# Storage directory will be mounted as volume
 
 # Set working directory
 WORKDIR /app

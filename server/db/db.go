@@ -25,13 +25,7 @@ func (db *DB) Start() {
 	log.Println("Starting DB handler")
 	var err error
 
-	// Create storage directory if it doesn't exist
-	storagePath := "/var/lib/cloud-storage"
-	if err := os.MkdirAll(storagePath, 0700); err != nil {
-		log.Fatal("Failed to create storage directory: ", err)
-	}
-
-	dbPath := filepath.Join(storagePath, "storage.db")
+	dbPath := filepath.Join("storage", "storage.db")
 	db.Connection, err = sql.Open("sqlite3", dbPath)
 	if err != nil {
 		log.Fatal(err)

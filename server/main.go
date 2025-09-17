@@ -20,6 +20,13 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Ensure storage directories exist
+	if _, err := os.Stat("storage"); os.IsNotExist(err) {
+		err := os.MkdirAll("storage/temp", 0700)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 
 	dbHost := db.NewDB()
 	dbHost.Start()

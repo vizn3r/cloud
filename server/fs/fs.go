@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -29,36 +28,13 @@ type File struct {
 
 const META_SEPARATOR = "\n---FILEDATA---\n"
 
-func getStoragePath() string {
-	return "/var/lib/cloud-storage"
-}
-
-func getStorageDir(subdir string) string {
-	return filepath.Join(getStoragePath(), subdir)
-}
-
-func ensureStorageDirs() error {
-	if err := os.MkdirAll(getStorageDir("temp"), 0700); err != nil {
-		return fmt.Errorf("failed to create temp directory: %v", err)
-	}
-	if err := os.MkdirAll(getStorageDir(""), 0700); err != nil {
-		return fmt.Errorf("failed to create storage directory: %v", err)
-	}
-	return nil
-}
-
 func FindFile(fileID string) (File, error) {
-	if err := ensureStorageDirs(); err != nil {
-		log.Printf("Failed to ensure storage directories: %v", err)
-		return File{}, err
-	}
-
 	// Validate file ID to prevent path traversal
 	if !isValidFileID(fileID) {
 		return File{}, os.ErrNotExist
 	}
 
-	data, err := os.ReadFile(getStorageDir(fileID))
+	data, err := os.ReadFile("storage/" + fileID)
 	if err != nil {
 		log.Printf("Failed to read file %s: %v", fileID, err)
 		return File{}, err
@@ -98,8 +74,8 @@ func (file File) SaveFile(db *sql.DB, ownerID string) (string, error) {
 	comb.WriteString(META_SEPARATOR)
 	comb.Write(file.Data)
 
-	temp := getStorageDir("temp/" + id)
-	final := getStorageDir(id)
+	temp := "storage/temp/" + id
+	final := "storage/" + id
 
 	err = os.WriteFile(temp, comb.Bytes(), 0600)
 	if err != nil {
@@ -119,7 +95,7 @@ func (file File) SaveFile(db *sql.DB, ownerID string) (string, error) {
 		if err != nil {
 			// If database insertion fails, clean up the file
 			log.Printf("Failed to insert file %s into database: %v", id, err)
-			os.Remove(getStorageDir(id))
+			os.Remove("storage/" + id)
 			return "", err
 		}
 	}
@@ -134,7 +110,7 @@ func DeleteFile(fileID string, db *sql.DB) error {
 	}
 
 	// Delete from filesystem first
-	err := os.Remove(getStorageDir(fileID))
+	err := os.Remove("storage/" + fileID)
 	if err != nil && !os.IsNotExist(err) {
 		log.Printf("Failed to delete file %s from filesystem: %v", fileID, err)
 		return err

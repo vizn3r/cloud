@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   server:
     build:
@@ -11,13 +9,13 @@ services:
     environment:
       - NODE_ENV=production
     volumes:
-      - cloud_storage:/var/lib/cloud-storage
+      - ./storage:/app/storage
       - ./server/server.json:/app/server.json:ro
     restart: unless-stopped
     networks:
       - cloud-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -31,16 +29,14 @@ services:
       dockerfile: webclient/Dockerfile
     container_name: cloud-webclient
     ports:
-      - "8818:80"
-    environment:
-      - NODE_ENV=production
+      - "8818:8008"
     depends_on:
       - server
     restart: unless-stopped
     networks:
       - cloud-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost"]
+      test: ["CMD", "curl", "-f", "http://localhost:8008"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -49,12 +45,12 @@ services:
 volumes:
   cloud_storage:
     driver: local
-    # Ensure the volume has the correct permissions
     driver_opts:
       type: none
-      o: bind,uid=1000,gid=1000
+      o: bind
       device: ./storage
 
 networks:
   cloud-network:
     driver: bridge
+
