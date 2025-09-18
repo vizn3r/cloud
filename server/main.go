@@ -20,6 +20,7 @@ var art string
 var log = logger.New("MAIN", logger.Cyan)
 
 func main() {
+	log.Info("Loading config...")
 	if err := conf.LoadFromBytes([]byte(config)); err != nil {
 		log.Fatal(err)
 	}
