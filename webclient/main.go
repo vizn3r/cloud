@@ -8,6 +8,7 @@ import (
 	_ "embed"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/logger"
 	"github.com/gofiber/fiber/v3/middleware/static"
 )
 
@@ -21,7 +22,15 @@ func main() {
 
 	app := fiber.New(fiber.Config{})
 
+	app.Use(logger.New(logger.Config{
+		Format:     "${time} | ${ip} | ${status} | ${method} | ${path} | ${latency}\n",
+		TimeFormat: "02-Jan-2006 15:04:05",
+		TimeZone:   "Local",
+	}))
+
 	app.Use("/*", static.New("./public"))
 
-	app.Listen(fmt.Sprintf(":%d", conf.GlobalConf.Port), fiber.ListenConfig{})
+	if err := app.Listen(fmt.Sprintf(":%d", conf.GlobalConf.Port), fiber.ListenConfig{}); err != nil {
+		log.Fatal(err)
+	}
 }

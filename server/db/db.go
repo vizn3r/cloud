@@ -4,7 +4,6 @@ import (
 	"cloud-server/logger"
 	"database/sql"
 	_ "embed"
-	"path/filepath"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -26,8 +25,7 @@ func (db *DB) Start() {
 	log.Info("Starting DB handler")
 	var err error
 
-	dbPath := filepath.Join("storage", "storage.db")
-	db.Connection, err = sql.Open("sqlite3", dbPath)
+	db.Connection, err = sql.Open("sqlite3", "storage/storage.db")
 	if err != nil {
 		log.Fatal(err)
 	}

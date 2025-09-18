@@ -2,16 +2,18 @@ package user
 
 import (
 	"cloud-server/db"
+	"cloud-server/logger"
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var log = logger.New("USER", logger.Purple)
 
 type User struct {
 	ID        string
@@ -32,17 +34,19 @@ func CreateUser(data *db.DB, email, password string) (string, error) {
 		return "", fmt.Errorf("invalid email")
 	}
 
+	salt := generateToken()
+
 	// Hash password
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(password+salt), bcrypt.DefaultCost)
 	if err != nil {
-		log.Printf("Failed to hash password for email %s: %v", email, err)
+		log.Error("Failed to hash password for email:", email, err)
 		return "", fmt.Errorf("failed to hash password")
 	}
 
 	userID := uuid.New().String()
-	_, err = data.Connection.Exec(db.Q_USER_CREATE, userID, email, string(hash))
+	_, err = data.Connection.Exec(db.Q_USER_CREATE, userID, email, string(hash), salt)
 	if err != nil {
-		log.Printf("Failed to create user %s in database: %v", email, err)
+		log.Error("Failed to create user:", email, err)
 		return "", fmt.Errorf("failed to create user: %v", err)
 	}
 
@@ -50,18 +54,18 @@ func CreateUser(data *db.DB, email, password string) (string, error) {
 }
 
 func AuthenticateUser(data *db.DB, email, password string) (string, error) {
-	var userID, storedHash string
+	var userID, storedHash, salt string
 	var createdAt time.Time
 
-	err := data.Connection.QueryRow(db.Q_USER_FIND_BY_EMAIL, email).Scan(&userID, &email, &storedHash, &createdAt)
+	err := data.Connection.QueryRow(db.Q_USER_FIND_BY_EMAIL, email).Scan(&userID, &email, &storedHash, &salt, &createdAt)
 	if err != nil {
-		log.Printf("Failed to find user by email %s: %v", email, err)
+		log.Error("Failed to find user by email:", email, err)
 		return "", fmt.Errorf("invalid credentials")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(password+salt))
 	if err != nil {
-		log.Printf("Password mismatch for user %s", email)
+		log.Print("Password mismatch for user", email)
 		return "", fmt.Errorf("invalid credentials")
 	}
 
@@ -75,7 +79,7 @@ func CreateSession(data *db.DB, userID string, duration time.Duration) (string, 
 
 	_, err := data.Connection.Exec(db.Q_SESSION_CREATE, sessionID, userID, token, expiresAt)
 	if err != nil {
-		log.Printf("Failed to create session for user %s: %v", userID, err)
+		log.Error("Failed to create session for user:", userID, err)
 		return "", fmt.Errorf("failed to create session")
 	}
 
@@ -91,7 +95,7 @@ func ValidateSession(data *db.DB, token string) (string, error) {
 
 	err := data.Connection.QueryRow(db.Q_SESSION_FIND_BY_TOKEN, token).Scan(&userID, &expiresAt)
 	if err != nil {
-		log.Printf("Invalid session token %s: %v", token, err)
+		log.Error("Invalid session token:", token, err)
 		return "", fmt.Errorf("invalid session")
 	}
 
@@ -109,7 +113,7 @@ func GetUserByID(data *db.DB, userID string) (User, error) {
 
 	err := data.Connection.QueryRow(db.Q_USER_FIND_BY_ID, userID).Scan(&userID, &email, &createdAt)
 	if err != nil {
-		log.Printf("Failed to find user by ID %s: %v", userID, err)
+		log.Error("Failed to find user by ID:", userID, err)
 		return User{}, fmt.Errorf("user not found")
 	}
 
@@ -123,7 +127,7 @@ func GetUserByID(data *db.DB, userID string) (User, error) {
 func GetUserFiles(data *db.DB, userID string) ([]string, error) {
 	rows, err := data.Connection.Query(db.Q_FILE_FIND_BY_OWNER, userID)
 	if err != nil {
-		log.Printf("Failed to query user files for %s: %v", userID, err)
+		log.Error("Failed to query user files for:", userID, err)
 		return nil, fmt.Errorf("failed to get user files")
 	}
 	defer rows.Close()
@@ -134,14 +138,14 @@ func GetUserFiles(data *db.DB, userID string) ([]string, error) {
 		var uploadedAt time.Time
 		var updatedAt sql.NullTime // Use nullable type for updated_at which can be NULL
 		if err := rows.Scan(&fileID, &uploadedAt, &updatedAt); err != nil {
-			log.Printf("Failed to scan file row: %v", err)
+			log.Error("Failed to scan file row:", err)
 			continue
 		}
 		files = append(files, fileID)
 	}
 
 	if err := rows.Err(); err != nil {
-		log.Printf("Error iterating over files: %v", err)
+		log.Error("Error iterating over files:", err)
 		return nil, fmt.Errorf("error reading files")
 	}
 

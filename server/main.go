@@ -39,7 +39,13 @@ func main() {
 	httpHost := http.NewHTTP(fmt.Sprintf(":%d", conf.GlobalConf.Port), dbHost)
 	httpHost.Start()
 
-	log.Print(art)
+	<-httpHost.Started
+
+	fmt.Println(art)
+	fmt.Println(logger.Grey, "	vizn3r's cloud thingy server", logger.Reset)
+	fmt.Println(logger.Grey, "	𝘱𝘰𝘸𝘦𝘳𝘦𝘥 𝘣𝘺 𝘨𝘰𝘧𝘪𝘣𝘦𝘳", logger.Reset)
+	fmt.Println(logger.Grey, "	© by Simon \"𝘷𝘪𝘻𝘯3𝘳\" Vizner - 2025", logger.Reset)
+	fmt.Println()
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)

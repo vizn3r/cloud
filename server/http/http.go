@@ -15,18 +15,20 @@ import (
 var log = logger.New("HTTP", logger.Green)
 
 type HTTP struct {
-	App  *fiber.App
-	Host string
-	db   *db.DB
-	done chan struct{}
+	App     *fiber.App
+	Host    string
+	db      *db.DB
+	Started chan struct{}
+	done    chan struct{}
 }
 
 func NewHTTP(host string, db *db.DB) *HTTP {
-	return &HTTP{App: fiber.New(fiber.Config{}), Host: host, db: db}
+	return &HTTP{App: fiber.New(fiber.Config{
+		AppName: "vizn3r's cloud storage thingy server",
+	}), Host: host, db: db, Started: make(chan struct{}), done: make(chan struct{})}
 }
 
 func (http *HTTP) Start() {
-	http.done = make(chan struct{})
 	log.Info("Starting HTTP handler")
 	go func() {
 		http.App.Use(func(c fiber.Ctx) error {
@@ -52,7 +54,11 @@ func (http *HTTP) Start() {
 		shareRouter(v1, http.db)
 		userRouter(v1, http.db)
 		publicRouter(v1)
-		if err := http.App.Listen(http.Host); err != nil {
+
+		close(http.Started)
+		if err := http.App.Listen(http.Host, fiber.ListenConfig{
+			DisableStartupMessage: true,
+		}); err != nil {
 			log.Fatal(err)
 		}
 		close(http.done)

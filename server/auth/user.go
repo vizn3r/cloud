@@ -29,10 +29,10 @@ func RequireFileOwnership(data *db.DB) fiber.Handler {
 		// Query database to check file ownership
 		var ownerID string
 		var uploadedAt time.Time
-		var updatedAt sql.NullTime // Use nullable type for updated_at which can be NULL
+		var updatedAt sql.NullTime
 		err := data.Connection.QueryRow(db.Q_FILE_FIND_BY_ID, fileID).Scan(&ownerID, &uploadedAt, &updatedAt)
 		if err != nil {
-			log.Error("File ownership query failed:", err)
+			log.Error("File ownership query failed: ", err)
 			return c.Status(fiber.StatusNotFound).SendString("File not found")
 		}
 
