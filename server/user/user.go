@@ -149,7 +149,11 @@ func GetUserFiles(data *db.DB, userID string) ([]string, error) {
 }
 
 func generateToken() string {
-	bytes := make([]byte, 32)
-	rand.Read(bytes)
-	return hex.EncodeToString(bytes)
+	// Loop IN CASE rand.Read() errors out (no chance, but redundancy is cool)
+	for {
+		bytes := make([]byte, 32)
+		if _, err := rand.Read(bytes); err == nil {
+			return hex.EncodeToString(bytes)
+		}
+	}
 }

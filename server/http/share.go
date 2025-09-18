@@ -4,7 +4,6 @@ import (
 	"cloud-server/auth"
 	"cloud-server/db"
 	"cloud-server/fs"
-	"log"
 	"strconv"
 	"time"
 
@@ -18,7 +17,7 @@ func shareRouter(api fiber.Router, db *db.DB) {
 		shid := c.Params("shid")
 		file, err := fs.FindFileByShare(db, shid)
 		if err != nil {
-			log.Println(err)
+			log.Error(err)
 			return c.SendStatus(fiber.StatusNotFound)
 		}
 		c.Set("Content-Type", file.Meta.ContentType)
@@ -34,7 +33,7 @@ func shareRouter(api fiber.Router, db *db.DB) {
 		fid := c.Params("fid")
 		shareID, err := fs.CreateShare(db, fid, time.Duration(duration)*time.Minute)
 		if err != nil {
-			log.Println(err)
+			log.Error(err)
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 		return c.SendString(shareID)

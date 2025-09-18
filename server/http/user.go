@@ -43,7 +43,7 @@ func userRouter(api fiber.Router, db *db.DB) {
 		return c.JSON(fiber.Map{
 			"message": "User created successfully",
 			"user_id": userID,
-			"token": token,
+			"token":   token,
 		})
 	})
 

@@ -1,13 +1,15 @@
 package db
 
 import (
+	"cloud-server/logger"
 	"database/sql"
 	_ "embed"
-	"log"
 	"path/filepath"
 
 	_ "github.com/mattn/go-sqlite3"
 )
+
+var log = logger.New(" DB ", logger.Magenta)
 
 type DB struct {
 	Connection *sql.DB
@@ -21,7 +23,7 @@ func NewDB() *DB {
 var tableQuery string
 
 func (db *DB) Start() {
-	log.Println("Starting DB handler")
+	log.Info("Starting DB handler")
 	var err error
 
 	dbPath := filepath.Join("storage", "storage.db")
@@ -30,8 +32,7 @@ func (db *DB) Start() {
 		log.Fatal(err)
 	}
 
-	log.Println("Creating tables")
-	log.Println(tableQuery)
+	log.Print("Creating tables...")
 	_, err = db.Connection.Exec(tableQuery)
 	if err != nil {
 		db.Connection.Close()
@@ -41,5 +42,6 @@ func (db *DB) Start() {
 
 func (db *DB) Stop() {
 	db.Connection.Close()
-	log.Println("DB handler stopped")
+	log.Warn("DB handler stopped")
+	log.Close()
 }

@@ -6,7 +6,6 @@ import (
 	"cloud-server/fs"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -20,14 +19,14 @@ func fsRouter(api fiber.Router, data *db.DB) {
 
 	files.Get("/:fid", auth.RequireToken(data), auth.RequireFileOwnership(data), func(c fiber.Ctx) error {
 		fid := c.Params("fid")
-		log.Println("Requesting file: ", fid)
+		log.Print("Requesting file: ", fid)
 
 		file, err := fs.FindFile(fid)
 		if os.IsNotExist(err) {
-			log.Println(err)
+			log.Error(err)
 			return c.SendStatus(fiber.StatusNotFound)
 		} else if err != nil {
-			log.Println(err)
+			log.Error(err)
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 		c.Set("Content-Type", file.Meta.ContentType)
@@ -36,14 +35,14 @@ func fsRouter(api fiber.Router, data *db.DB) {
 
 	files.Get("/:fid/data", auth.RequireToken(data), auth.RequireFileOwnership(data), func(c fiber.Ctx) error {
 		fid := c.Params("fid")
-		log.Println("Requesting file: ", fid)
+		log.Print("Requesting file: ", fid)
 
 		file, err := fs.FindFile(fid)
 		if os.IsNotExist(err) {
-			log.Println(err)
+			log.Error(err)
 			return c.SendStatus(fiber.StatusNotFound)
 		} else if err != nil {
-			log.Println(err)
+			log.Error(err)
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
@@ -51,7 +50,7 @@ func fsRouter(api fiber.Router, data *db.DB) {
 
 		data, err := json.Marshal(file.Meta)
 		if err != nil {
-			log.Println(err)
+			log.Error(err)
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 		return c.Send(data)
@@ -59,14 +58,14 @@ func fsRouter(api fiber.Router, data *db.DB) {
 
 	files.Get("/:fid/thumbnail", auth.RequireToken(data), auth.RequireFileOwnership(data), func(c fiber.Ctx) error {
 		fid := c.Params("fid")
-		log.Println("Requesting thumbnail for file: ", fid)
+		log.Print("Requesting thumbnail for file: ", fid)
 
 		file, err := fs.FindFile(fid)
 		if os.IsNotExist(err) {
-			log.Println(err)
+			log.Error(err)
 			return c.SendStatus(fiber.StatusNotFound)
 		} else if err != nil {
-			log.Println(err)
+			log.Error(err)
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
@@ -90,7 +89,7 @@ func fsRouter(api fiber.Router, data *db.DB) {
 		}
 
 		// Generate SVG icon with file extension
-		iconSVG := generateFileIconSVG(extension)
+		iconSVG := fileIconSVG(extension)
 		return c.SendString(iconSVG)
 	})
 
@@ -108,14 +107,14 @@ func fsRouter(api fiber.Router, data *db.DB) {
 			}
 
 			// Validate file name
-			if !isSafeFilename(file.Filename) {
+			if !checkFileName(file.Filename) {
 				return c.Status(fiber.StatusBadRequest).SendString("Invalid filename")
 			}
 
 			ogName = file.Filename
 			opened, err := file.Open()
 			if err != nil {
-				log.Println(err)
+				log.Error(err)
 				return c.SendStatus(fiber.StatusInternalServerError)
 			}
 			defer opened.Close()
@@ -123,7 +122,7 @@ func fsRouter(api fiber.Router, data *db.DB) {
 			fileData = make([]byte, file.Size)
 			_, err = opened.Read(fileData)
 			if err != nil {
-				log.Println(err)
+				log.Error(err)
 				return c.SendStatus(fiber.StatusInternalServerError)
 			}
 		} else {
@@ -150,11 +149,11 @@ func fsRouter(api fiber.Router, data *db.DB) {
 		userID := c.Locals("userID").(string)
 		id, err := newFile.SaveFile(data.Connection, userID)
 		if err != nil {
-			log.Println(err)
+			log.Error(err)
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
-		log.Println("Uploaded file:", id, "by user:", userID)
+		log.Print("Uploaded file:", id, "by user:", userID)
 		return c.SendString(id)
 	})
 
@@ -163,34 +162,20 @@ func fsRouter(api fiber.Router, data *db.DB) {
 
 		err := fs.DeleteFile(fid, data.Connection)
 		if err != nil {
-			log.Printf("Failed to delete file %s: %v", fid, err)
+			log.Error("Failed to delete file", fid, err)
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to delete file")
 		}
 
-		log.Printf("Deleted file: %s by user: %s", fid, c.Locals("userID").(string))
+		log.Print("Deleted file:", fid, "by user:", c.Locals("userID").(string))
 		return c.SendStatus(fiber.StatusOK)
 	})
 }
 
-func isSafeFilename(filename string) bool {
-	// Prevent path traversal and malicious filenames
-	if strings.Contains(filename, "..") || strings.Contains(filename, "/") || strings.Contains(filename, "\\") {
-		return false
-	}
-
-	// Prevent potentially dangerous extensions
-	// ... or don't, it's my cloud, i dont fucking care xd
-	//blacklist := []string{".exe", ".bat", ".cmd", ".sh", ".php", ".py", ".js", ".html"}
-	//for _, ext := range blacklist {
-	//	if strings.HasSuffix(strings.ToLower(filename), ext) {
-	//		return false
-	//	}
-	//}
-
-	return true
+func checkFileName(filename string) bool {
+	return !strings.Contains(filename, "..") && !strings.Contains(filename, "/") && !strings.Contains(filename, "\\")
 }
 
-func generateFileIconSVG(extension string) string {
+func fileIconSVG(extension string) string {
 	// Simple SVG icon with file extension text
 	return fmt.Sprintf(`<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg">
 		<rect width="64" height="64" fill="#3b82f6" rx="8"/>
