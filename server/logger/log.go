@@ -83,6 +83,8 @@ func (lg *Logger) run() {
 			lg.l.Printf(fmt.Sprintf("%s[WARN]%s %s", Yellow, Reset, m.msg))
 		case "ERROR":
 			lg.l.Printf(fmt.Sprintf("%s[ERROR]%s %s", Red, Reset, m.msg))
+		case "DEBUG":
+			lg.l.Printf(fmt.Sprintf("%s[DEBUG]%s %s", Grey, Reset, m.msg))
 		case "FATAL":
 			lg.l.Printf(fmt.Sprintf("%s[FATAL]%s %s", Red, Reset, m.msg))
 			os.Exit(1)
@@ -93,6 +95,11 @@ func (lg *Logger) run() {
 		}
 	}
 	close(lg.done)
+}
+
+// Log pushes a message to the log channel
+func (lg *Logger) Log(level string, v ...any) {
+	lg.logCh <- logMessage{level: level, msg: fmt.Sprint(v...)}
 }
 
 // Info pushes a message to the log channel
@@ -108,6 +115,10 @@ func (lg *Logger) Warn(v ...any) {
 // Error pushes a message to the log channel
 func (lg *Logger) Error(v ...any) {
 	lg.logCh <- logMessage{level: "ERROR", msg: fmt.Sprint(v...)}
+}
+
+func (lg *Logger) Debug(v ...any) {
+	lg.logCh <- logMessage{level: "DEBUG", msg: fmt.Sprint(v...)}
 }
 
 // Print pushes a colored message to the log channel

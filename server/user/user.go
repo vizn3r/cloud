@@ -1,13 +1,14 @@
 package user
 
 import (
-	"cloud-server/db"
-	"cloud-server/logger"
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"time"
+
+	"cloud-server/db"
+	"cloud-server/logger"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"

@@ -1,18 +1,29 @@
 package auth
 
 import (
+	"os"
+	"strings"
+
 	"cloud-server/db"
 	"cloud-server/logger"
 	"cloud-server/user"
-	"strings"
 
 	"github.com/gofiber/fiber/v3"
 )
+
+func IsTest() bool {
+	return os.Getenv("TEST") == "true"
+}
 
 var log = logger.New("AUTH", logger.Red)
 
 func RequireToken(db *db.DB) fiber.Handler {
 	return func(c fiber.Ctx) error {
+		if IsTest() {
+			log.Warn("Test mode - auth disabled")
+			c.Locals("userID", "test-user-uuid")
+			return c.Next()
+		}
 		log.Print("Token check...")
 		authHeader := c.Get("Authorization")
 

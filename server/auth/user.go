@@ -1,9 +1,10 @@
 package auth
 
 import (
-	"cloud-server/db"
 	"database/sql"
 	"time"
+
+	"cloud-server/db"
 
 	"github.com/gofiber/fiber/v3"
 )

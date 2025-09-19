@@ -1,15 +1,16 @@
 package main
 
 import (
-	"cloud-server/conf"
-	"cloud-server/db"
-	"cloud-server/http"
-	"cloud-server/logger"
 	_ "embed"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"cloud-server/conf"
+	"cloud-server/db"
+	"cloud-server/http"
+	"cloud-server/logger"
 )
 
 //go:embed server.json
@@ -25,9 +26,13 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if http.IsTest() {
+		log.Warn("Running in test mode")
+	}
+
 	// Ensure temp directory exists
 	if _, err := os.Stat("storage/temp"); os.IsNotExist(err) {
-		err := os.MkdirAll("storage/temp", 0700)
+		err := os.MkdirAll("storage/temp", 0o700)
 		if err != nil {
 			log.Fatal(err)
 		}

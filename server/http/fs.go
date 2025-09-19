@@ -1,14 +1,15 @@
 package http
 
 import (
-	"cloud-server/auth"
-	"cloud-server/db"
-	"cloud-server/fs"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 	"time"
+
+	"cloud-server/auth"
+	"cloud-server/db"
+	"cloud-server/fs"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gofiber/fiber/v3"
@@ -91,6 +92,46 @@ func fsRouter(api fiber.Router, data *db.DB) {
 		// Generate SVG icon with file extension
 		iconSVG := fileIconSVG(extension)
 		return c.SendString(iconSVG)
+	})
+
+	// Upload session functionality
+
+	files.Post("/init", auth.RequireToken(data), func(c fiber.Ctx) error {
+		var uploadSession *fs.UploadSession
+		var err error
+		userID := c.Locals("userID").(string)
+
+		if uploadSession, err = fs.CreateUploadSession(data, userID, 30*time.Minute); err != nil {
+			log.Error("Error creating upload session: ", err)
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		if err := json.Unmarshal(c.Body(), &uploadSession); err != nil {
+			log.Error("Error parsing body: ", err)
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		log.Print("Generated session ID:", uploadSession.ID)
+		log.Print("Uploaded file:", uploadSession.File.Meta.ID, "by user:", userID)
+		log.Print("Uploaded file:", uploadSession.File.Meta.UploadName)
+		log.Print("Uploaded file:", uploadSession.File.Meta.ContentType)
+		log.Print("Uploaded file:", uploadSession.File.Meta.Size)
+		log.Print("Uploaded file:", uploadSession.ChunkNum)
+		log.Print("Uploaded file:", uploadSession.ChunkSize)
+
+		log.Print("Generated session ID:", uploadSession.ID)
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"id": uploadSession.ID,
+		})
+	})
+
+	files.Post("/:sid/:chunk", auth.RequireToken(data), func(c fiber.Ctx) error {
+		sid := c.Params("sid")
+		chunk := c.Params("chunk")
+
+		log.Print("Received chunk:", sid, chunk)
+
+		return c.SendStatus(fiber.StatusOK)
 	})
 
 	files.Post("/", auth.RequireToken(data), func(c fiber.Ctx) error {

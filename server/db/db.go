@@ -1,12 +1,18 @@
 package db
 
 import (
-	"cloud-server/logger"
 	"database/sql"
 	_ "embed"
+	"os"
+
+	"cloud-server/logger"
 
 	_ "github.com/mattn/go-sqlite3"
 )
+
+func IsTest() bool {
+	return os.Getenv("TEST") == "true"
+}
 
 var log = logger.New(" DB ", logger.Magenta)
 
@@ -22,10 +28,16 @@ func NewDB() *DB {
 var tableQuery string
 
 func (db *DB) Start() {
-	log.Info("Starting DB handler")
+	log.Info("Starting handler")
 	var err error
+	dataSource := "storage/storage.db"
 
-	db.Connection, err = sql.Open("sqlite3", "storage/storage.db")
+	if IsTest() {
+		log.Warn("Running in test mode")
+		dataSource = "storage/storage_test.db"
+	}
+
+	db.Connection, err = sql.Open("sqlite3", dataSource)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -40,6 +52,10 @@ func (db *DB) Start() {
 
 func (db *DB) Stop() {
 	db.Connection.Close()
-	log.Warn("DB handler stopped")
+	log.Warn("Handler stopped")
+	if IsTest() {
+		log.Warn("Removing test database")
+		os.Remove("storage/storage_test.db")
+	}
 	log.Close()
 }

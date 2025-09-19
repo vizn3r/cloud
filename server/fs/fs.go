@@ -2,13 +2,15 @@ package fs
 
 import (
 	"bytes"
-	"cloud-server/logger"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
+
+	"cloud-server/logger"
 
 	"github.com/google/uuid"
 )
@@ -17,15 +19,16 @@ var log = logger.New(" FS ", logger.Cyan)
 
 type FileMeta struct {
 	UploadName  string    `json:"uploadName"`
-	FileUUID    string    `json:"fileUUID"`
+	ID          string    `json:"ID"`
 	Size        uint64    `json:"size"`
 	UploadedAt  time.Time `json:"uploadedAt"`
 	ContentType string    `json:"contentType"`
 }
 
 type File struct {
-	Meta FileMeta
-	Data []byte
+	Meta FileMeta      `json:"meta"`
+	Data []byte        `json:"-"`
+	io   io.ReadCloser `json:"-"`
 }
 
 const META_SEPARATOR = "\n---FILEDATA---\n"
@@ -63,7 +66,7 @@ func FindFile(fileID string) (File, error) {
 
 func (file File) SaveFile(db *sql.DB, ownerID string) (string, error) {
 	id := uuid.New().String()
-	file.Meta.FileUUID = id
+	file.Meta.ID = id
 
 	metaJSON, err := json.Marshal(file.Meta)
 	if err != nil {
@@ -79,7 +82,7 @@ func (file File) SaveFile(db *sql.DB, ownerID string) (string, error) {
 	temp := "storage/temp/" + id
 	final := "storage/" + id
 
-	err = os.WriteFile(temp, comb.Bytes(), 0600)
+	err = os.WriteFile(temp, comb.Bytes(), 0o600)
 	if err != nil {
 		log.Print("Failed to write temp file: ", temp, err)
 		return "", err

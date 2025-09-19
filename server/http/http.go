@@ -1,12 +1,14 @@
 package http
 
 import (
+	"context"
+	"fmt"
+	"os"
+	"time"
+
 	"cloud-server/conf"
 	"cloud-server/db"
 	"cloud-server/logger"
-	"context"
-	"fmt"
-	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
@@ -20,6 +22,10 @@ type HTTP struct {
 	db      *db.DB
 	Started chan struct{}
 	done    chan struct{}
+}
+
+func IsTest() bool {
+	return os.Getenv("TEST") == "true"
 }
 
 func NewHTTP(host string, db *db.DB) *HTTP {
