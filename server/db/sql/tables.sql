@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS upload_sessions (
   file_id TEXT NOT NULL,
   n_chunks INTEGER,
   chunk_size INTEGER,
+  chunk_map TEXT,
   expires_at TIMESTAMP NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

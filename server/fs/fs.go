@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 	"time"
@@ -15,7 +14,11 @@ import (
 	"github.com/google/uuid"
 )
 
-var log = logger.New(" FS ", logger.Cyan)
+var (
+	log       = logger.New(" FS ", logger.Cyan)
+	tempDest  = "storage/temp/"
+	finalDest = "storage/"
+)
 
 type FileMeta struct {
 	UploadName  string    `json:"uploadName"`
@@ -26,9 +29,9 @@ type FileMeta struct {
 }
 
 type File struct {
-	Meta FileMeta      `json:"meta"`
-	Data []byte        `json:"-"`
-	io   io.ReadCloser `json:"-"`
+	Meta FileMeta `json:"meta"`
+	Data []byte   `json:"-"`
+	io   *os.File `json:"-"`
 }
 
 const META_SEPARATOR = "\n---FILEDATA---\n"
@@ -79,8 +82,8 @@ func (file File) SaveFile(db *sql.DB, ownerID string) (string, error) {
 	comb.WriteString(META_SEPARATOR)
 	comb.Write(file.Data)
 
-	temp := "storage/temp/" + id
-	final := "storage/" + id
+	temp := tempDest + id
+	final := finalDest + id
 
 	err = os.WriteFile(temp, comb.Bytes(), 0o600)
 	if err != nil {

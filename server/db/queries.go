@@ -26,9 +26,11 @@ const (
 	Q_FILE_DELETE        = "DELETE FROM files WHERE id = ?"
 
 	// Upload session queries
-	Q_UPLOAD_INSERT     = "INSERT INTO upload_sessions (id, user_id, file_id, expires_at) VALUES (?, ?, ?, ?)"
-	Q_UPLOAD_FIND_BY_ID = "SELECT user_id, file_id, expires_at FROM upload_sessions WHERE id = ?"
-	Q_UPLOAD_DELETE     = "DELETE FROM upload_sessions WHERE id = ?"
+	Q_UPLOAD_INSERT        = "INSERT INTO upload_sessions (id, user_id, file_id, expires_at) VALUES (?, ?, ?, ?)"
+	Q_UPLOAD_CHUNKS_BY_ID  = "SELECT n_chunks, chunk_size, chunk_map FROM upload_sessions WHERE id = ?"
+	Q_UPLOAD_UPDATE_CHUNKS = "UPDATE upload_sessions SET (n_chunks, chunk_size, chunk_map) = (?, ?, ?) WHERE id = ?"
+	Q_UPLOAD_FIND_BY_ID    = "SELECT user_id, file_id, expires_at FROM upload_sessions WHERE id = ?"
+	Q_UPLOAD_DELETE        = "DELETE FROM upload_sessions WHERE id = ?"
 
 	// User session queries
 	Q_SESSION_CREATE         = "INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, ?)"

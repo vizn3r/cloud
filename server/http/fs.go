@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -95,6 +96,7 @@ func fsRouter(api fiber.Router, data *db.DB) {
 	})
 
 	// Upload session functionality
+	var sessions map[string]*fs.UploadSession
 
 	files.Post("/init", auth.RequireToken(data), func(c fiber.Ctx) error {
 		var uploadSession *fs.UploadSession
@@ -111,13 +113,13 @@ func fsRouter(api fiber.Router, data *db.DB) {
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
-		log.Print("Generated session ID:", uploadSession.ID)
-		log.Print("Uploaded file:", uploadSession.File.Meta.ID, "by user:", userID)
-		log.Print("Uploaded file:", uploadSession.File.Meta.UploadName)
-		log.Print("Uploaded file:", uploadSession.File.Meta.ContentType)
-		log.Print("Uploaded file:", uploadSession.File.Meta.Size)
-		log.Print("Uploaded file:", uploadSession.ChunkNum)
-		log.Print("Uploaded file:", uploadSession.ChunkSize)
+		// Check if the request is valid
+		if uploadSession.FileMeta.UploadName == "" || uploadSession.FileMeta.ContentType == "" || uploadSession.FileMeta.Size == 0 || uploadSession.ChunkNum == 0 || uploadSession.ChunkSize == 0 {
+			log.Error("Invalid upload session request")
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		sessions[uploadSession.ID] = uploadSession
 
 		log.Print("Generated session ID:", uploadSession.ID)
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -127,11 +129,49 @@ func fsRouter(api fiber.Router, data *db.DB) {
 
 	files.Post("/:sid/:chunk", auth.RequireToken(data), func(c fiber.Ctx) error {
 		sid := c.Params("sid")
-		chunk := c.Params("chunk")
+		chunkParam := c.Params("chunk")
+		chunkID, err := strconv.ParseUint(chunkParam, 10, 64)
+		if err != nil {
+			log.Error("Invalid chunk ID:", chunkID)
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
 
-		log.Print("Received chunk:", sid, chunk)
+		session, ok := sessions[sid]
+		if !ok {
+			log.Error("Invalid session ID:", sid)
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
 
-		return c.SendStatus(fiber.StatusOK)
+		chunkData := c.Body()
+		if len(chunkData) == 0 {
+			log.Error("Empty chunk data")
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		chunk := &fs.UploadChunk{
+			ID:   chunkID,
+			Size: uint64(len(chunkData)),
+			Data: chunkData,
+		}
+
+		// Check if the chunk is valid
+		if chunk.Size > uint64(session.ChunkSize) {
+			log.Error("Invalid chunk data")
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		// Write chunk data to file
+		nextChunkID, err := session.SaveChunk(data, chunk)
+		if err != nil {
+			log.Error("Error writing chunk data: ", err)
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		log.Print("Received chunk: ", sid, chunk)
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"id": nextChunkID,
+		})
 	})
 
 	files.Post("/", auth.RequireToken(data), func(c fiber.Ctx) error {
