@@ -96,7 +96,7 @@ func fsRouter(api fiber.Router, data *db.DB) {
 	})
 
 	// Upload session functionality
-	var sessions map[string]*fs.UploadSession
+	sessions := make(map[string]*fs.UploadSession)
 
 	files.Post("/init", auth.RequireToken(data), func(c fiber.Ctx) error {
 		var uploadSession *fs.UploadSession

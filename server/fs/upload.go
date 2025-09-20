@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"fmt"
 	"math/bits"
 	"os"
 	"time"
@@ -36,6 +37,7 @@ func CreateUploadSession(data *db.DB, userID string, duration time.Duration) (*U
 	session := &UploadSession{
 		ID:        uuid.New().String(),
 		UserID:    userID,
+		ChunkMap:  make([]uint64, 0),
 		ExpiresAt: time.Now().Add(duration),
 	}
 
@@ -86,6 +88,14 @@ func getNextChunk(chunkMap []uint64) (uint64, bool) {
 	return 0, false
 }
 
+func chunkMapToString(chunkMap []uint64) string {
+	str := ""
+	for _, chunk := range chunkMap {
+		str += fmt.Sprintf("%b", chunk)
+	}
+	return str
+}
+
 func (s *UploadSession) SaveChunk(data *db.DB, chunk *UploadChunk) (nextChunkID uint64, err error) {
 	temp := tempDest + s.FileMeta.ID
 	final := finalDest + s.FileMeta.ID
@@ -117,7 +127,7 @@ func (s *UploadSession) SaveChunk(data *db.DB, chunk *UploadChunk) (nextChunkID 
 	// Update the chunks
 	s.ChunkNum -= 1
 
-	if _, err := data.Connection.Exec(db.Q_UPLOAD_UPDATE_CHUNKS, s.ID, s.ChunkNum, chunk.ID); err != nil {
+	if _, err := data.Connection.Exec(db.Q_UPLOAD_UPDATE_CHUNKS, s.ChunkNum, s.ChunkSize, chunkMapToString(s.ChunkMap), s.ID); err != nil {
 		log.Error("Failed to save chunk: ", err)
 		return 0, err
 	}
